@@ -1,17 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <!-- Mobile optimized viewport -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Tarbo Admin Dashboard</title>
+  <title>لوحة تحكم تاربو</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    
     :root {
       --bg: #f4f6f8;
       --card-bg: #ffffff;
@@ -19,9 +16,11 @@
       --text: #333333;
       --text-muted: #888888;
       --border: #e0e0e0;
+      --border-strong: #cfd4da;
+      --field-bg: #f8f9fb;
       --accent: #2d7a2d;
+      --red: #d93025;
     }
-
     body {
       font-family: 'Inter', sans-serif;
       background: var(--bg);
@@ -30,304 +29,203 @@
       flex-direction: column;
       height: 100vh;
       overflow: hidden;
-      /* Max width for desktop viewing to keep it mobile-like */
       max-width: 600px;
       margin: 0 auto;
       box-shadow: 0 0 20px rgba(0,0,0,0.05);
+      direction: rtl;
     }
-
-    /* Header */
     header {
       background: var(--card-bg);
-      padding: 20px;
+      padding: 18px 20px;
       text-align: center;
       border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
       z-index: 10;
     }
-    header h1 {
-      font-size: 18px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--primary);
-    }
-
-    /* Main Content Area */
-    main {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      padding-bottom: 80px; /* Space for bottom nav */
-    }
-
-    /* Tabs */
-    .tab-content {
-      display: none;
-      animation: fadeIn 0.3s ease;
-    }
-    .tab-content.active {
-      display: block;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Cards */
-    .card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-    
-    /* Order Styles */
-    .order-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 12px;
-    }
-    .order-date {
-      font-size: 12px;
+    header h1 { font-size: 18px; font-weight: 800; color: var(--primary); }
+    main { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 104px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .page-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .page-title h2 { font-size: 17px; line-height: 1.2; color: var(--primary); }
+    .page-kicker { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+    .card { background: var(--card-bg); border: 1px solid #eef0f2; border-radius: 12px; padding: 14px; margin-bottom: 14px; box-shadow: 0 8px 24px rgba(17,17,17,0.04); }
+    .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+    .order-date { font-size: 12px; color: var(--text-muted); }
+    .order-status { font-size: 10px; background: #e8f5e9; color: var(--accent); padding: 4px 8px; border-radius: 12px; font-weight: 600; text-transform: uppercase; }
+    .order-info { display: grid; gap: 7px; font-size: 14px; line-height: 1.45; }
+    .order-info p { color: var(--text-muted); }
+    .order-total { margin-top: 14px; padding-top: 12px; border-top: 1px solid #f0f1f2; font-weight: 800; text-align: left; color: var(--primary); }
+    .empty-state {
+      display: grid;
+      place-items: center;
+      min-height: 220px;
+      padding: 28px 20px;
+      text-align: center;
       color: var(--text-muted);
     }
-    .order-status {
-      font-size: 10px;
-      background: #e8f5e9;
-      color: var(--accent);
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-    .order-details p {
-      font-size: 14px;
-      margin-bottom: 6px;
-    }
-    .order-details strong {
-      color: var(--primary);
-    }
-    .order-items {
-      margin-top: 12px;
-      background: var(--bg);
-      padding: 10px;
-      border-radius: 6px;
-    }
-    .order-item {
-      font-size: 13px;
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 4px;
-    }
-    .order-total {
-      margin-top: 12px;
-      font-weight: 700;
-      text-align: right;
-      color: var(--primary);
-    }
-
-    /* Forms */
-    .form-group {
-      margin-bottom: 16px;
-    }
-    .form-group label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-      text-transform: uppercase;
-    }
-    .form-group input, .form-group textarea, .form-group select {
+    .empty-state h3 { margin-bottom: 8px; color: var(--primary); font-size: 16px; }
+    .empty-state p { max-width: 280px; font-size: 13px; line-height: 1.5; }
+    .form-grid { display: grid; gap: 13px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-group { margin-bottom: 0; }
+    .form-group label { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.02em; }
+    .form-group input,
+    .form-group textarea {
       width: 100%;
-      padding: 12px;
+      min-height: 44px;
+      padding: 12px 13px;
       border: 1px solid var(--border);
       border-radius: 8px;
       font-family: inherit;
-      font-size: 14px;
-      background: var(--bg);
-      transition: border-color 0.2s;
+      font-size: 16px;
+      color: var(--primary);
+      background: var(--field-bg);
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
     }
-    .form-group input:focus, .form-group textarea:focus {
+    .form-group textarea { resize: vertical; min-height: 82px; line-height: 1.45; }
+    .form-group input:focus,
+    .form-group textarea:focus {
       outline: none;
       border-color: var(--primary);
-      background: var(--card-bg);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(17,17,17,0.06);
     }
-    
-    .color-section {
-      border: 1px solid var(--border);
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      background: var(--bg);
-    }
-
-    .btn {
-      width: 100%;
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      padding: 14px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .btn:active { background: #333; }
-    .btn-secondary {
-      background: var(--bg);
-      color: var(--primary);
-      border: 1px solid var(--border);
-      margin-top: 8px;
-    }
-
-    /* Bottom Nav */
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--card-bg);
-      border-top: 1px solid var(--border);
+    input[type="color"] { height: 44px; padding: 5px; cursor: pointer; }
+    input[type="file"] {
       display: flex;
-      justify-content: space-around;
-      padding: 12px 0 24px 0; /* Extra padding for iOS bottom bar */
-      z-index: 10;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-    .nav-item {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      display: flex;
-      flex-direction: column;
       align-items: center;
-      gap: 4px;
-      font-size: 10px;
-      font-weight: 500;
+      min-height: 48px;
+      padding: 8px;
       cursor: pointer;
-      transition: color 0.2s;
     }
-    .nav-item svg {
-      width: 24px;
-      height: 24px;
-    }
-    .nav-item.active {
+    input[type="file"]::file-selector-button {
+      border: 1px solid var(--border-strong);
+      border-radius: 7px;
+      background: #fff;
       color: var(--primary);
+      padding: 8px 10px;
+      margin-left: 10px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
     }
-
-    /* Loader */
-    .loader {
-      text-align: center;
-      padding: 40px;
-      color: var(--text-muted);
-      font-size: 14px;
+    .color-section {
+      display: grid;
+      gap: 14px;
+      padding: 12px;
+      border: 1px solid #edf0f2;
+      border-radius: 10px;
+      background: #fbfcfd;
+      margin-bottom: 12px;
     }
-    
-    .image-preview-container {
+    .section-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .section-label span { font-size: 11px; font-weight: 800; color: var(--text-muted); }
+    .swatch-line { display: grid; grid-template-columns: 84px 1fr; gap: 10px; align-items: end; }
+    .actions { display: grid; gap: 10px; margin-top: 4px; }
+    .btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 15px 14px; border-radius: 8px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.16s, opacity 0.16s, background 0.16s; }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-secondary { background: #6b6b6b; }
+    .upload-panel { display: grid; gap: 14px; }
+    .hero-preview { min-height: 104px; padding: 10px; border: 1px dashed var(--border-strong); border-radius: 10px; background: #fbfcfd; }
+    .hero-preview:empty { align-items: center; justify-content: center; }
+    .hero-preview:empty::before {
+      content: "لم يتم اختيار صور";
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 82px;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
     }
-    .image-preview {
-      width: 60px;
-      height: 60px;
-      border-radius: 6px;
-      object-fit: cover;
-      border: 1px solid var(--border);
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.96); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 10px 0 22px 0; z-index: 10; max-width: 600px; margin: 0 auto; backdrop-filter: blur(12px); }
+    .nav-item { min-width: 76px; min-height: 52px; border-radius: 10px; background: none; border: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .nav-item.active { color: var(--primary); }
+    .nav-item:focus { outline: none; }
+    .nav-item:focus-visible { background: #f4f6f8; }
+    .nav-item svg { width: 24px; height: 24px; }
+    #authOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    .loader { text-align: center; padding: 20px; color: var(--text-muted); }
+    .image-preview-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .image-preview { width: 68px; height: 68px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); background: var(--field-bg); }
+    .hero-preview .image-preview { width: 92px; height: 92px; }
+    @media (max-width: 420px) {
+      main { padding: 16px; padding-bottom: 100px; }
+      header h1 { font-size: 16px; }
+      .form-row,
+      .swatch-line { grid-template-columns: 1fr; }
+      .card { padding: 14px; }
     }
   </style>
 </head>
 <body>
+  <script>console.log("BODY SCRIPT START");</script>
+  <div id="authOverlay">
+    <div class="loader">جاري التحقق...</div>
+  </div>
 
   <header>
     <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px;">
-      <div style="width: 40px;"></div> <!-- Spacer -->
-      <h1>Tarbo Dashboard</h1>
-      <button onclick="handleLogout()" style="background:none; border:none; cursor:pointer; color:var(--text-muted); font-size:12px; font-weight:600; text-transform:uppercase;">Logout</button>
+      <div style="width: 40px;"></div>
+      <h1>لوحة تاربو</h1>
+      <button onclick="handleLogout()" style="background:none; border:none; cursor:pointer; color:var(--text-muted); font-size:12px; font-weight:700;">خروج</button>
     </div>
   </header>
 
   <main>
-    <!-- ORDERS TAB -->
     <div id="ordersTab" class="tab-content active">
-      <h2 style="font-size: 16px; margin-bottom: 16px;">Recent Orders</h2>
-      <div id="ordersContainer">
-        <div class="loader">Loading orders...</div>
+      <div class="page-title">
+        <h2>الطلبات</h2>
+        <span class="page-kicker">مباشر</span>
       </div>
+      <div id="ordersContainer"><div class="loader">جاري تحميل الطلبات...</div></div>
     </div>
 
-    <!-- ADD PRODUCT TAB -->
     <div id="addProductTab" class="tab-content">
-      <h2 style="font-size: 16px; margin-bottom: 16px;">Add New Product</h2>
+      <div class="page-title">
+        <h2>إضافة منتج</h2>
+        <span class="page-kicker">المتجر</span>
+      </div>
       <div class="card">
-        <form id="addProductForm">
-          <div class="form-group">
-            <label>Product Name</label>
-            <input type="text" id="prodName" required placeholder="e.g. Caven Suit" />
+        <form id="addProductForm" class="form-grid">
+          <div class="form-group"><label>اسم المنتج</label><input type="text" id="prodName" required /></div>
+          <div class="form-group"><label>الوصف</label><textarea id="prodDesc" rows="3"></textarea></div>
+          <div class="form-row">
+            <div class="form-group"><label>السعر</label><input type="number" id="prodPrice" required /></div>
+            <div class="form-group"><label>المخزون</label><input type="number" id="prodStock" required /></div>
           </div>
-          
-          <div class="form-group">
-            <label>Price (LE)</label>
-            <input type="number" id="prodPrice" required placeholder="1200" />
-          </div>
-          
-          <div class="form-group">
-            <label>Available Stock</label>
-            <input type="number" id="prodStock" required placeholder="50" />
-          </div>
-
-          <div class="form-group">
-            <label>Available Sizes (Comma separated)</label>
-            <input type="text" id="prodSizes" required placeholder="e.g. S, M, L, XL" />
-          </div>
-
+          <div class="form-group"><label>المقاسات</label><input type="text" id="prodSizes" required placeholder="مثال: S, M, L, XL" /></div>
           <div id="colorsContainer">
-            <div class="color-section" data-index="0">
-              <div class="form-group">
-                <label>Color Palette</label>
-                <input type="color" class="color-code" required value="#000000" style="height: 40px; padding: 4px;" />
-              </div>
-              <div class="form-group" style="margin-bottom: 0;">
-                <label>Upload Images for this Color</label>
-                <input type="file" class="color-images" multiple accept="image/*" onchange="previewImages(this, 0)" />
-                <div class="image-preview-container" id="preview-0"></div>
+            <div class="color-section">
+              <div class="section-label"><span>لون المنتج</span></div>
+              <div class="swatch-line">
+                <div class="form-group"><label>اللون</label><input type="color" class="color-code" value="#000000" /></div>
+                <div class="form-group"><label>الصور</label><input type="file" class="color-images" multiple onchange="previewImages(this, 0)" /><div class="image-preview-container" id="preview-0"></div></div>
               </div>
             </div>
           </div>
-          
-          <button type="button" class="btn btn-secondary" onclick="addColorSection()" style="margin-bottom: 24px;">+ Add Another Color</button>
-
-          <button type="submit" class="btn" id="submitProductBtn">Save Product</button>
-          <div id="productMessage" style="margin-top: 12px; font-size: 14px; text-align: center;"></div>
+          <div class="actions">
+            <button type="button" class="btn btn-secondary" onclick="addColorSection()">+ لون آخر</button>
+            <button type="submit" class="btn" id="submitProductBtn">حفظ المنتج</button>
+          </div>
         </form>
       </div>
     </div>
 
-    <!-- HERO TAB -->
     <div id="heroTab" class="tab-content">
-      <h2 style="font-size: 16px; margin-bottom: 16px;">Hero Section Images</h2>
+      <div class="page-title">
+        <h2>صور الواجهة</h2>
+        <span class="page-kicker">الرئيسية</span>
+      </div>
       <div class="card">
-        <form id="heroForm">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label>Upload New Hero Images</label>
-            <input type="file" id="heroImagesInput" multiple accept="image/*" onchange="previewHeroImages(this)" />
-            <div class="image-preview-container" id="heroPreview"></div>
-          </div>
-          <button type="submit" class="btn" id="submitHeroBtn" style="margin-top: 16px;">Upload Images</button>
-          <div id="heroMessage" style="margin-top: 12px; font-size: 14px; text-align: center;"></div>
+        <form id="heroForm" class="upload-panel">
+          <div class="form-group"><label>صور الواجهة</label><input type="file" id="heroImagesInput" multiple onchange="previewHeroImages(this)" /></div>
+          <div class="image-preview-container hero-preview" id="heroPreview"></div>
+          <button type="submit" class="btn" id="submitHeroBtn">رفع الصور</button>
         </form>
       </div>
     </div>
@@ -335,321 +233,157 @@
 
   <nav class="bottom-nav">
     <button class="nav-item active" onclick="switchTab('ordersTab', this)">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-      Orders
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+      الطلبات
     </button>
     <button class="nav-item" onclick="switchTab('addProductTab', this)">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
-      Add Product
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"></path></svg>
+      منتج
     </button>
     <button class="nav-item" onclick="switchTab('heroTab', this)">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-      Hero
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+      الواجهة
     </button>
   </nav>
 
-  <!-- Supabase JS Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2" defer></script>
   <script>
+    window.onload = () => {
+      console.log("WINDOW ONLOAD - DASHBOARD START");
     const supabaseUrl = 'https://erbidxbhooavcynttbml.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyYmlkeGJob29hdmN5bnR0Ym1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxODk5MTgsImV4cCI6MjA5Mjc2NTkxOH0.HyksCx9ZVhZNdXfgNLiH3V9HnZUDh8I3KFbM_ovUn8o';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const sessionKey = 'tarboAdminSession';
 
-    // Authentication Guard
-    async function checkAuth() {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
+    function checkAuth() {
+      console.log("Checking Auth...");
+      if (!localStorage.getItem(sessionKey)) {
         window.location.href = 'login.html';
-      }
-    }
-    checkAuth();
-
-    async function handleLogout() {
-      await supabase.auth.signOut();
-      window.location.href = 'login.html';
-    }
-
-    let colorCount = 1;
-
-    // Switch Tabs
-    function switchTab(tabId, btnElement) {
-      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      
-      document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-      btnElement.classList.add('active');
-
-      if (tabId === 'ordersTab') {
+      } else {
+        document.getElementById('authOverlay').style.display = 'none';
         fetchOrders();
       }
     }
 
-    // Fetch Orders
-    async function fetchOrders() {
-      const container = document.getElementById('ordersContainer');
-      container.innerHTML = '<div class="loader">Loading orders...</div>';
+    // Global functions for HTML onclick attributes
+    window.switchTab = (id, btn) => {
+      document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+      const target = document.getElementById(id);
+      if (target) target.style.display = 'block';
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      if (id === 'ordersTab') fetchOrders();
+    };
 
-      try {
-        const { data, error } = await supabase
-          .from('orders')
-          .select('*')
-          .order('created_at', { ascending: false });
+    window.handleLogout = () => {
+      localStorage.removeItem(sessionKey);
+      window.location.href = 'login.html';
+    };
 
-        if (error) {
-          // If table doesn't exist, this throws. We show a helpful message.
-          if(error.code === '42P01') {
-            container.innerHTML = `<div class="loader" style="color:var(--red);">Table 'orders' does not exist in Supabase yet. Please create it.</div>`;
-          } else {
-            throw error;
-          }
-          return;
-        }
-
-        if (data.length === 0) {
-          container.innerHTML = '<div class="loader">No orders found.</div>';
-          return;
-        }
-
-        container.innerHTML = '';
-        data.forEach(order => {
-          const d = new Date(order.created_at);
-          let itemsHtml = '';
-          if (order.items && Array.isArray(order.items)) {
-            order.items.forEach(item => {
-              itemsHtml += `<div class="order-item"><span>${item.name}</span><span>LE ${item.price}</span></div>`;
-            });
-          }
-
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
-            <div class="order-header">
-              <span class="order-date">${d.toLocaleDateString()} ${d.toLocaleTimeString()}</span>
-              <span class="order-status">New</span>
-            </div>
-            <div class="order-details">
-              <p><strong>${order.customer_name}</strong></p>
-              <p>📞 ${order.phone}</p>
-              <p>📍 ${order.address}</p>
-              <p>💳 ${order.payment_method === 'cod' ? 'Cash on Delivery' : 'Card'}</p>
-            </div>
-            <div class="order-items">
-              ${itemsHtml}
-              <div class="order-total">Total: LE ${order.total_price}</div>
-            </div>
-          `;
-          container.appendChild(card);
-        });
-
-      } catch (err) {
-        console.error('Error fetching orders:', err);
-        container.innerHTML = '<div class="loader" style="color:var(--red);">Error loading orders.</div>';
-      }
-    }
-
-    // Add Color Section for Products
-    function addColorSection() {
+    window.addColorSection = () => {
       const container = document.getElementById('colorsContainer');
-      const idx = colorCount++;
+      const idx = document.querySelectorAll('.color-section').length;
       const div = document.createElement('div');
       div.className = 'color-section';
-      div.setAttribute('data-index', idx);
-      div.innerHTML = `
-        <div class="form-group">
-          <label>Color Palette</label>
-          <input type="color" class="color-code" required value="#ffffff" style="height: 40px; padding: 4px;" />
-        </div>
-        <div class="form-group" style="margin-bottom: 0;">
-          <label>Upload Images for this Color</label>
-          <input type="file" class="color-images" multiple accept="image/*" onchange="previewImages(this, ${idx})" />
-          <div class="image-preview-container" id="preview-${idx}"></div>
-        </div>
-      `;
+      div.innerHTML = `<div class="section-label"><span>لون ${idx + 1}</span></div><div class="swatch-line"><div class="form-group"><label>اللون</label><input type="color" class="color-code" value="#ffffff" /></div><div class="form-group"><label>الصور</label><input type="file" class="color-images" multiple onchange="previewImages(this, ${idx})" /><div class="image-preview-container" id="preview-${idx}"></div></div></div>`;
       container.appendChild(div);
+    };
+
+    window.previewImages = (input, idx) => {
+      const cont = document.getElementById(`preview-${idx}`);
+      if (!cont) return;
+      cont.innerHTML = '';
+      Array.from(input.files).forEach(f => {
+        const img = document.createElement('img');
+        img.className = 'image-preview';
+        img.src = URL.createObjectURL(f);
+        cont.appendChild(img);
+      });
+    };
+
+    window.previewHeroImages = (input) => {
+      const cont = document.getElementById('heroPreview');
+      if (!cont) return;
+      cont.innerHTML = '';
+      Array.from(input.files).forEach(f => {
+        const img = document.createElement('img');
+        img.className = 'image-preview';
+        img.src = URL.createObjectURL(f);
+        cont.appendChild(img);
+      });
+    };
+
+    async function fetchOrders() {
+      const cont = document.getElementById('ordersContainer');
+      cont.innerHTML = '<div class="card"><div class="loader">جاري تحميل الطلبات...</div></div>';
+      const { data, error } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
+      if (error) {
+        cont.innerHTML = `<div class="card empty-state"><div><h3>تعذر تحميل الطلبات</h3><p>${error.message}</p></div></div>`;
+        return;
+      }
+      if (!data.length) {
+        cont.innerHTML = '<div class="card empty-state"><div><h3>لا توجد طلبات</h3><p>أي طلب جديد من المتجر سيظهر هنا مباشرة.</p></div></div>';
+        return;
+      }
+      cont.innerHTML = '';
+      data.forEach(o => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `<div class="order-header"><span class="order-date">${new Date(o.created_at).toLocaleString('ar-EG')}</span><span class="order-status">جديد</span></div><div class="order-info"><strong>${o.customer_name}</strong><p>${o.phone || 'بدون رقم'} | ${o.address || 'بدون عنوان'}</p></div><div class="order-total">${o.total_price} جنيه</div>`;
+        cont.appendChild(div);
+      });
     }
 
-    // Helper to upload file to Supabase Storage and return public URL
+    // Helper to upload images
     async function uploadImage(file, bucket) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file);
-
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
-
-      return publicUrl;
+      const name = `${Math.random().toString(36).substring(7)}-${Date.now()}`;
+      await supabaseClient.storage.from(bucket).upload(name, file);
+      return supabaseClient.storage.from(bucket).getPublicUrl(name).data.publicUrl;
     }
 
-    // Preview Images
-    function previewImages(input, idx) {
-      const container = document.getElementById(`preview-${idx}`);
-      container.innerHTML = '';
-      if (input.files) {
-        Array.from(input.files).forEach(file => {
-          const img = document.createElement('img');
-          img.className = 'image-preview';
-          img.src = URL.createObjectURL(file);
-          container.appendChild(img);
-        });
-      }
-    }
-
-    // Preview Hero Images
-    function previewHeroImages(input) {
-      const container = document.getElementById('heroPreview');
-      container.innerHTML = '';
-      if (input.files) {
-        Array.from(input.files).forEach(file => {
-          const img = document.createElement('img');
-          img.className = 'image-preview';
-          img.src = URL.createObjectURL(file);
-          container.appendChild(img);
-        });
-      }
-    }
-
-    // Hero Form Submission
-    document.getElementById('heroForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('submitHeroBtn');
-      const msg = document.getElementById('heroMessage');
-      btn.textContent = 'Uploading...';
-      btn.disabled = true;
-      msg.textContent = '';
-      
-      try {
-        const files = document.getElementById('heroImagesInput').files;
-        if (!files || files.length === 0) throw new Error("Please select images.");
-        
-        const imageUrls = [];
-        for (const file of Array.from(files)) {
-          const url = await uploadImage(file, 'hero');
-          imageUrls.push(url);
-        }
-
-        const { data, error } = await supabase
-          .from('hero_images')
-          .insert([{ images: imageUrls }]);
-
-        if (error) {
-          if (error.code === '42P01') {
-            msg.style.color = 'var(--red, red)';
-            msg.textContent = "Table 'hero_images' does not exist in Supabase yet.";
-          } else {
-            throw error;
-          }
-        } else {
-          msg.style.color = 'var(--accent)';
-          msg.textContent = 'Hero images uploaded successfully!';
-          document.getElementById('heroForm').reset();
-          document.getElementById('heroPreview').innerHTML = '';
-        }
-      } catch (err) {
-        console.error(err);
-        msg.style.color = 'var(--red, red)';
-        
-        // Supabase RLS error check
-        if (err.message && err.message.includes("row-level security")) {
-          msg.textContent = "Permission denied: Please disable Row Level Security (RLS) or add an insert policy for the 'hero_images' table in Supabase.";
-        } else {
-          msg.textContent = err.message || 'Failed to upload hero images.';
-        }
-      }
-      btn.textContent = 'Upload Images';
-      btn.disabled = false;
-    });
-
-    // Add Product Form Submission
     document.getElementById('addProductForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('submitProductBtn');
-      const msg = document.getElementById('productMessage');
-      btn.textContent = 'Saving...';
       btn.disabled = true;
-      msg.textContent = '';
-
       try {
-        const name = document.getElementById('prodName').value;
-        const price = parseFloat(document.getElementById('prodPrice').value);
-        const stock = parseInt(document.getElementById('prodStock').value);
-        const sizesRaw = document.getElementById('prodSizes').value;
-        const sizes = sizesRaw.split(',').map(s => s.trim()).filter(s => s);
-        
-        // Gather colors and images
         const colors = [];
-        const colorSections = document.querySelectorAll('.color-section');
-        
-        for (const section of colorSections) {
-          const colorCode = section.querySelector('.color-code').value;
-          const files = section.querySelector('.color-images').files;
-          const imageUrls = [];
-          
-          if (!files || files.length === 0) {
-            throw new Error("Each color MUST have at least one image uploaded.");
-          }
-          
-          for (const file of Array.from(files)) {
-            const url = await uploadImage(file, 'products');
-            imageUrls.push(url);
-          }
-          
-          colors.push({ color: colorCode, images: imageUrls });
+        for (const s of document.querySelectorAll('.color-section')) {
+          const code = s.querySelector('.color-code').value;
+          const files = s.querySelector('.color-images').files;
+          const urls = [];
+          for (const f of files) urls.push(await uploadImage(f, 'products'));
+          colors.push({ color: code, images: urls });
         }
-
-        const { data, error } = await supabase
-          .from('products')
-          .insert([
-            {
-              name: name,
-              price: price,
-              stock: stock,
-              sizes: sizes,
-              colors: colors
-            }
-          ]);
-
-        if (error) {
-          if(error.code === '42P01') {
-            msg.style.color = 'var(--red, red)';
-            msg.textContent = "Table 'products' does not exist in Supabase yet. Please create it.";
-          } else {
-            throw error;
-          }
-        } else {
-          msg.style.color = 'var(--accent)';
-          msg.textContent = 'Product added successfully!';
-          document.getElementById('addProductForm').reset();
-          document.querySelectorAll('.image-preview-container').forEach(c => c.innerHTML = '');
-        }
-
-      } catch (err) {
-        console.error('Error adding product:', err);
-        msg.style.color = 'var(--red, red)';
-        
-        // Supabase RLS error check
-        if (err.message && err.message.includes("row-level security")) {
-          msg.textContent = "Permission denied: Please disable Row Level Security (RLS) or add an insert policy for the 'products' table in Supabase.";
-        } else {
-          msg.textContent = err.message || 'Failed to add product.';
-        }
-      }
-
-      btn.textContent = 'Save Product';
+        await supabaseClient.from('products').insert([{
+          name: document.getElementById('prodName').value,
+          description: document.getElementById('prodDesc').value,
+          price: parseFloat(document.getElementById('prodPrice').value),
+          stock: parseInt(document.getElementById('prodStock').value),
+          sizes: document.getElementById('prodSizes').value.split(',').map(s => s.trim()),
+          colors
+        }]);
+        alert('تم الحفظ');
+        location.reload();
+      } catch (err) { alert(err.message); }
       btn.disabled = false;
     });
 
-    // Initial load
-    document.addEventListener('DOMContentLoaded', () => {
-      fetchOrders();
+    document.getElementById('heroForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitHeroBtn');
+      btn.disabled = true;
+      try {
+        const urls = [];
+        for (const f of document.getElementById('heroImagesInput').files) urls.push(await uploadImage(f, 'hero'));
+        await supabaseClient.from('hero_images').insert([{ images: urls }]);
+        alert('تم الرفع');
+        location.reload();
+      } catch (err) { alert(err.message); }
+      btn.disabled = false;
     });
 
+    checkAuth();
+    };
   </script>
 </body>
 </html>

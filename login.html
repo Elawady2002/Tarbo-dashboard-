@@ -157,11 +157,10 @@
   <div id="message"></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const supabaseUrl = 'https://erbidxbhooavcynttbml.supabase.co';
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyYmlkeGJob29hdmN5bnR0Ym1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxODk5MTgsImV4cCI6MjA5Mjc2NTkxOH0.HyksCx9ZVhZNdXfgNLiH3V9HnZUDh8I3KFbM_ovUn8o';
-  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  const adminEmail = 'admin@tarbo.store';
+  const adminPassword = 'admin123456';
+  const sessionKey = 'tarboAdminSession';
 
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -178,38 +177,31 @@
     btn.disabled = true;
     msg.style.display = 'none';
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
+    setTimeout(() => {
+      if (email === adminEmail && password === adminPassword) {
+        localStorage.setItem(sessionKey, JSON.stringify({
+          email,
+          loggedInAt: new Date().toISOString(),
+        }));
 
-      if (error) throw error;
-
-      // Success
-      msg.textContent = 'Login successful! Redirecting...';
-      msg.className = 'success';
-      msg.style.display = 'block';
-      
-      setTimeout(() => {
+        msg.textContent = 'Login successful! Redirecting...';
+        msg.className = 'success';
+        msg.style.display = 'block';
         window.location.href = 'index.html';
-      }, 1500);
+      } else {
+        msg.textContent = 'Invalid email or password.';
+        msg.className = 'error';
+        msg.style.display = 'block';
 
-    } catch (err) {
-      msg.textContent = err.message || 'Authentication failed.';
-      msg.className = 'error';
-      msg.style.display = 'block';
-      
-      btnText.style.display = 'block';
-      loader.style.display = 'none';
-      btn.disabled = false;
-    }
+        btnText.style.display = 'block';
+        loader.style.display = 'none';
+        btn.disabled = false;
+      }
+    }, 300);
   });
 
-  // Check if already logged in
-  async function checkSession() {
-    const { data } = await supabase.auth.getSession();
-    if (data.session) {
+  function checkSession() {
+    if (localStorage.getItem(sessionKey)) {
       window.location.href = 'index.html';
     }
   }
