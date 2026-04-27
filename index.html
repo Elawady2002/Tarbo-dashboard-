@@ -258,6 +258,13 @@
 
   <script src="https://unpkg.com/@supabase/supabase-js@2" defer></script>
   <script>
+    /**
+     * DASHBOARD CHANGES SUMMARY:
+     * - Added fetchHeroImages() to display currently active hero images.
+     * - Improved hero image upload form with visual feedback ("Uploading...").
+     * - Added validation to ensure images are selected before upload.
+     * - Fixed logic to refresh the preview automatically after successful upload.
+     */
     window.onload = () => {
       console.log("WINDOW ONLOAD - DASHBOARD START");
     const supabaseUrl = 'https://erbidxbhooavcynttbml.supabase.co';
@@ -378,21 +385,48 @@
       btn.disabled = false;
     });
 
+    async function fetchHeroImages() {
+      const { data, error } = await supabaseClient.from('hero_images').select('*').order('id', { ascending: false }).limit(1);
+      const cont = document.getElementById('heroPreview');
+      if (error || !data || data.length === 0) {
+        cont.innerHTML = '';
+        return;
+      }
+      const latest = data[0];
+      if (latest.images && Array.isArray(latest.images)) {
+        cont.innerHTML = '';
+        latest.images.forEach(url => {
+          const img = document.createElement('img');
+          img.className = 'image-preview';
+          img.src = url;
+          cont.appendChild(img);
+        });
+      }
+    }
+
     document.getElementById('heroForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('submitHeroBtn');
+      const input = document.getElementById('heroImagesInput');
+      if (input.files.length === 0) {
+        alert('يرجى اختيار صور أولاً');
+        return;
+      }
       btn.disabled = true;
+      btn.textContent = 'جاري الرفع...';
       try {
         const urls = [];
-        for (const f of document.getElementById('heroImagesInput').files) urls.push(await uploadImage(f, 'hero'));
+        for (const f of input.files) urls.push(await uploadImage(f, 'hero'));
         await supabaseClient.from('hero_images').insert([{ images: urls }]);
-        alert('تم الرفع');
+        alert('تم الرفع بنجاح');
         location.reload();
       } catch (err) { alert(err.message); }
       btn.disabled = false;
+      btn.textContent = 'رفع الصور';
     });
 
     checkAuth();
+    fetchHeroImages();
     };
   </script>
 </body>
