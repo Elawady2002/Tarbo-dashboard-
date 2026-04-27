@@ -253,7 +253,11 @@
 <body>
 
   <header>
-    <h1>Tarbo Dashboard</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px;">
+      <div style="width: 40px;"></div> <!-- Spacer -->
+      <h1>Tarbo Dashboard</h1>
+      <button onclick="handleLogout()" style="background:none; border:none; cursor:pointer; color:var(--text-muted); font-size:12px; font-weight:600; text-transform:uppercase;">Logout</button>
+    </div>
   </header>
 
   <main>
@@ -347,10 +351,23 @@
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Supabase configuration
     const supabaseUrl = 'https://erbidxbhooavcynttbml.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyYmlkeGJob29hdmN5bnR0Ym1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxODk5MTgsImV4cCI6MjA5Mjc2NTkxOH0.HyksCx9ZVhZNdXfgNLiH3V9HnZUDh8I3KFbM_ovUn8o';
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Authentication Guard
+    async function checkAuth() {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        window.location.href = 'login.html';
+      }
+    }
+    checkAuth();
+
+    async function handleLogout() {
+      await supabase.auth.signOut();
+      window.location.href = 'login.html';
+    }
 
     let colorCount = 1;
 
@@ -451,14 +468,23 @@
       container.appendChild(div);
     }
 
-    // Convert file to Base64
-    function toBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-      });
+    // Helper to upload file to Supabase Storage and return public URL
+    async function uploadImage(file, bucket) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+
+      return publicUrl;
     }
 
     // Preview Images
@@ -502,14 +528,15 @@
         const files = document.getElementById('heroImagesInput').files;
         if (!files || files.length === 0) throw new Error("Please select images.");
         
-        const imagesBase64 = [];
+        const imageUrls = [];
         for (const file of Array.from(files)) {
-          imagesBase64.push(await toBase64(file));
+          const url = await uploadImage(file, 'hero');
+          imageUrls.push(url);
         }
 
         const { data, error } = await supabase
           .from('hero_images')
-          .insert([{ images: imagesBase64 }]);
+          .insert([{ images: imageUrls }]);
 
         if (error) {
           if (error.code === '42P01') {
@@ -562,18 +589,18 @@
         for (const section of colorSections) {
           const colorCode = section.querySelector('.color-code').value;
           const files = section.querySelector('.color-images').files;
-          const imagesBase64 = [];
+          const imageUrls = [];
           
           if (!files || files.length === 0) {
             throw new Error("Each color MUST have at least one image uploaded.");
           }
           
           for (const file of Array.from(files)) {
-            const b64 = await toBase64(file);
-            imagesBase64.push(b64);
+            const url = await uploadImage(file, 'products');
+            imageUrls.push(url);
           }
           
-          colors.push({ color: colorCode, images: imagesBase64 });
+          colors.push({ color: colorCode, images: imageUrls });
         }
 
         const { data, error } = await supabase
