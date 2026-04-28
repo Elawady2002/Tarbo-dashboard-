@@ -157,6 +157,36 @@
     .image-preview-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .image-preview { width: 68px; height: 68px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); background: var(--field-bg); }
     .hero-preview .image-preview { width: 92px; height: 92px; }
+    .hero-list { display: grid; gap: 10px; }
+    .hero-list-title { margin-bottom: 12px; font-size: 14px; font-weight: 800; color: var(--primary); }
+    .hero-item {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fbfcfd;
+    }
+    .hero-item img { width: 96px; height: 72px; border-radius: 8px; object-fit: cover; background: var(--field-bg); }
+    .hero-item-info { display: grid; gap: 8px; min-width: 0; }
+    .hero-item-title { font-size: 13px; font-weight: 800; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hero-item-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .mini-btn {
+      border: 1px solid var(--border-strong);
+      background: #fff;
+      color: var(--primary);
+      border-radius: 7px;
+      padding: 7px 9px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .mini-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .mini-btn-danger { border-color: #f1b8b4; color: var(--red); }
+    .status-message { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
     @media (max-width: 420px) {
       main { padding: 16px; padding-bottom: 100px; }
       header h1 { font-size: 16px; }
@@ -233,10 +263,16 @@
       </div>
       <div class="card">
         <form id="heroForm" class="upload-panel">
-          <div class="form-group"><label>صور الواجهة</label><input type="file" id="heroImagesInput" multiple onchange="previewHeroImages(this)" /></div>
-          <div class="image-preview-container hero-preview" id="heroPreview"></div>
+          <div class="form-group"><label>صور الواجهة</label><input type="file" id="heroImagesInput" multiple accept="image/*" onchange="previewHeroImages(this)" /></div>
+          <div class="image-preview-container hero-preview" id="selectedHeroPreview"></div>
           <button type="submit" class="btn" id="submitHeroBtn">رفع الصور</button>
         </form>
+      </div>
+      <div class="card">
+        <div class="hero-list-title">الصور الحالية</div>
+        <div class="hero-list" id="heroImagesList">
+          <div class="loader">جاري تحميل صور الواجهة...</div>
+        </div>
       </div>
     </div>
   </main>
@@ -260,10 +296,9 @@
   <script>
     /**
      * DASHBOARD CHANGES SUMMARY:
-     * - Added fetchHeroImages() to display currently active hero images.
-     * - Improved hero image upload form with visual feedback ("Uploading...").
-     * - Added validation to ensure images are selected before upload.
-     * - Fixed logic to refresh the preview automatically after successful upload.
+     * - Hero images are managed as one database row per image.
+     * - Uploads go to Supabase Storage bucket "hero" then save image_url/storage_path.
+     * - Dashboard supports preview, ordering, and delete with explicit error handling.
      */
     window.onload = () => {
       console.log("WINDOW ONLOAD - DASHBOARD START");
@@ -318,14 +353,32 @@
       });
     };
 
+    const heroBucket = 'hero';
+    let heroImages = [];
+    let selectedHeroObjectUrls = [];
+
+    function clearSelectedHeroObjectUrls() {
+      selectedHeroObjectUrls.forEach(url => URL.revokeObjectURL(url));
+      selectedHeroObjectUrls = [];
+    }
+
+    function setHeroBusy(isBusy) {
+      document.querySelectorAll('[data-hero-action]').forEach(btn => {
+        btn.disabled = isBusy;
+      });
+    }
+
     window.previewHeroImages = (input) => {
-      const cont = document.getElementById('heroPreview');
+      const cont = document.getElementById('selectedHeroPreview');
       if (!cont) return;
+      clearSelectedHeroObjectUrls();
       cont.innerHTML = '';
       Array.from(input.files).forEach(f => {
         const img = document.createElement('img');
         img.className = 'image-preview';
-        img.src = URL.createObjectURL(f);
+        const objectUrl = URL.createObjectURL(f);
+        selectedHeroObjectUrls.push(objectUrl);
+        img.src = objectUrl;
         cont.appendChild(img);
       });
     };
@@ -351,11 +404,25 @@
       });
     }
 
-    // Helper to upload images
+    async function uploadFile(file, bucket) {
+      const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/^-+|-+$/g, '') || 'image';
+      const uniqueId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const path = `${Date.now()}-${uniqueId}-${safeName}`;
+      const { error: uploadError } = await supabaseClient.storage.from(bucket).upload(path, file, {
+        contentType: file.type || 'image/jpeg',
+        upsert: false
+      });
+      if (uploadError) throw new Error(`فشل رفع الصورة: ${uploadError.message}`);
+
+      const { data } = supabaseClient.storage.from(bucket).getPublicUrl(path);
+      if (!data || !data.publicUrl) throw new Error('تم رفع الملف لكن تعذر إنشاء رابط عام للصورة');
+
+      return { path, publicUrl: data.publicUrl };
+    }
+
     async function uploadImage(file, bucket) {
-      const name = `${Math.random().toString(36).substring(7)}-${Date.now()}`;
-      await supabaseClient.storage.from(bucket).upload(name, file);
-      return supabaseClient.storage.from(bucket).getPublicUrl(name).data.publicUrl;
+      const uploaded = await uploadFile(file, bucket);
+      return uploaded.publicUrl;
     }
 
     document.getElementById('addProductForm').addEventListener('submit', async (e) => {
@@ -385,23 +452,126 @@
       btn.disabled = false;
     });
 
-    async function fetchHeroImages() {
-      const { data, error } = await supabaseClient.from('hero_images').select('*').order('id', { ascending: false }).limit(1);
-      const cont = document.getElementById('heroPreview');
-      if (error || !data || data.length === 0) {
-        cont.innerHTML = '';
+    function renderHeroImages() {
+      const cont = document.getElementById('heroImagesList');
+      if (!cont) return;
+      cont.innerHTML = '';
+
+      if (!heroImages.length) {
+        cont.innerHTML = '<div class="status-message">لا توجد صور هيرو مرفوعة حالياً. ارفع صورة من النموذج بالأعلى لتظهر في المتجر.</div>';
         return;
       }
-      const latest = data[0];
-      if (latest.images && Array.isArray(latest.images)) {
-        cont.innerHTML = '';
-        latest.images.forEach(url => {
-          const img = document.createElement('img');
-          img.className = 'image-preview';
-          img.src = url;
-          cont.appendChild(img);
-        });
+
+      heroImages.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'hero-item';
+
+        const img = document.createElement('img');
+        img.src = item.image_url;
+        img.alt = item.title || `Hero image ${index + 1}`;
+
+        const info = document.createElement('div');
+        info.className = 'hero-item-info';
+
+        const title = document.createElement('div');
+        title.className = 'hero-item-title';
+        title.textContent = item.title || `صورة الواجهة ${index + 1}`;
+
+        const actions = document.createElement('div');
+        actions.className = 'hero-item-actions';
+
+        const upBtn = document.createElement('button');
+        upBtn.type = 'button';
+        upBtn.className = 'mini-btn';
+        upBtn.textContent = '↑ أعلى';
+        upBtn.disabled = index === 0;
+        upBtn.dataset.heroAction = 'move';
+        upBtn.addEventListener('click', () => moveHeroImage(index, -1));
+
+        const downBtn = document.createElement('button');
+        downBtn.type = 'button';
+        downBtn.className = 'mini-btn';
+        downBtn.textContent = '↓ أسفل';
+        downBtn.disabled = index === heroImages.length - 1;
+        downBtn.dataset.heroAction = 'move';
+        downBtn.addEventListener('click', () => moveHeroImage(index, 1));
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'mini-btn mini-btn-danger';
+        deleteBtn.textContent = 'حذف';
+        deleteBtn.dataset.heroAction = 'delete';
+        deleteBtn.addEventListener('click', () => deleteHeroImage(item));
+
+        actions.append(upBtn, downBtn, deleteBtn);
+        info.append(title, actions);
+        row.append(img, info);
+        cont.appendChild(row);
+      });
+    }
+
+    async function fetchHeroImages() {
+      const { data, error } = await supabaseClient
+        .from('hero_images')
+        .select('id,image_url,title,storage_path,sort_order,created_at')
+        .order('sort_order', { ascending: true })
+        .order('id', { ascending: true });
+
+      if (error) {
+        document.getElementById('heroImagesList').innerHTML = `<div class="status-message">تعذر تحميل صور الواجهة: ${error.message}</div>`;
+        return;
       }
+
+      heroImages = (data || []).filter(item => item.image_url);
+      renderHeroImages();
+    }
+
+    async function saveHeroOrder() {
+      const updates = heroImages.map((item, index) =>
+        supabaseClient.from('hero_images').update({ sort_order: index + 1 }).eq('id', item.id)
+      );
+      const results = await Promise.all(updates);
+      const failed = results.find(result => result.error);
+      if (failed) throw new Error(`تعذر حفظ ترتيب الصور: ${failed.error.message}`);
+    }
+
+    async function moveHeroImage(index, direction) {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= heroImages.length) return;
+
+      setHeroBusy(true);
+      const originalOrder = [...heroImages];
+      try {
+        [heroImages[index], heroImages[targetIndex]] = [heroImages[targetIndex], heroImages[index]];
+        renderHeroImages();
+        await saveHeroOrder();
+        await fetchHeroImages();
+      } catch (err) {
+        heroImages = originalOrder;
+        renderHeroImages();
+        alert(err.message);
+      }
+      setHeroBusy(false);
+    }
+
+    async function deleteHeroImage(item) {
+      if (!confirm('هل تريد حذف هذه الصورة من الهيرو؟')) return;
+
+      setHeroBusy(true);
+      try {
+        const { error } = await supabaseClient.from('hero_images').delete().eq('id', item.id);
+        if (error) throw new Error(`تعذر حذف الصورة: ${error.message}`);
+
+        if (item.storage_path) {
+          const { error: storageError } = await supabaseClient.storage.from(heroBucket).remove([item.storage_path]);
+          if (storageError) console.warn('Could not delete hero file:', storageError.message);
+        }
+
+        await fetchHeroImages();
+      } catch (err) {
+        alert(err.message);
+      }
+      setHeroBusy(false);
     }
 
     document.getElementById('heroForm').addEventListener('submit', async (e) => {
@@ -414,13 +584,36 @@
       }
       btn.disabled = true;
       btn.textContent = 'جاري الرفع...';
+      const uploadedPaths = [];
       try {
-        const urls = [];
-        for (const f of input.files) urls.push(await uploadImage(f, 'hero'));
-        await supabaseClient.from('hero_images').insert([{ images: urls }]);
+        const startOrder = heroImages.length;
+        const rows = [];
+
+        for (const [index, file] of Array.from(input.files).entries()) {
+          const uploaded = await uploadFile(file, heroBucket);
+          uploadedPaths.push(uploaded.path);
+          rows.push({
+            image_url: uploaded.publicUrl,
+            storage_path: uploaded.path,
+            title: file.name,
+            sort_order: startOrder + index + 1
+          });
+        }
+
+        const { error } = await supabaseClient.from('hero_images').insert(rows);
+        if (error) throw new Error(`تم رفع الصور لكن تعذر حفظها في الداتا بيز: ${error.message}`);
+
         alert('تم الرفع بنجاح');
-        location.reload();
-      } catch (err) { alert(err.message); }
+        input.value = '';
+        clearSelectedHeroObjectUrls();
+        document.getElementById('selectedHeroPreview').innerHTML = '';
+        await fetchHeroImages();
+      } catch (err) {
+        if (uploadedPaths.length) {
+          await supabaseClient.storage.from(heroBucket).remove(uploadedPaths);
+        }
+        alert(err.message);
+      }
       btn.disabled = false;
       btn.textContent = 'رفع الصور';
     });
