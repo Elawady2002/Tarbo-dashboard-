@@ -356,6 +356,11 @@
     const heroBucket = 'hero';
     let heroImages = [];
     let selectedHeroObjectUrls = [];
+    let heroSchemaReady = false;
+
+    function getHeroSetupMessage(errorMessage) {
+      return `إعدادات صور الهيرو غير مكتملة في Supabase. شغّل ملف dashboard/setup-hero-images.sql من SQL Editor ثم أعد تحميل الصفحة. التفاصيل: ${errorMessage}`;
+    }
 
     function clearSelectedHeroObjectUrls() {
       selectedHeroObjectUrls.forEach(url => URL.revokeObjectURL(url));
@@ -518,10 +523,12 @@
         .order('id', { ascending: true });
 
       if (error) {
-        document.getElementById('heroImagesList').innerHTML = `<div class="status-message">تعذر تحميل صور الواجهة: ${error.message}</div>`;
+        heroSchemaReady = false;
+        document.getElementById('heroImagesList').innerHTML = `<div class="status-message">${getHeroSetupMessage(error.message)}</div>`;
         return;
       }
 
+      heroSchemaReady = true;
       heroImages = (data || []).filter(item => item.image_url);
       renderHeroImages();
     }
@@ -581,6 +588,13 @@
       if (input.files.length === 0) {
         alert('يرجى اختيار صور أولاً');
         return;
+      }
+      if (!heroSchemaReady) {
+        await fetchHeroImages();
+        if (!heroSchemaReady) {
+          alert('لا يمكن رفع الصور الآن لأن إعدادات الداتا بيز غير مكتملة. شغّل ملف dashboard/setup-hero-images.sql في Supabase أولاً.');
+          return;
+        }
       }
       btn.disabled = true;
       btn.textContent = 'جاري الرفع...';
