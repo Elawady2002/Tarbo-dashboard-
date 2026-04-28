@@ -115,7 +115,8 @@
       font-weight: 600;
       cursor: pointer;
     }
-    .color-section {
+    .color-section,
+    .size-section {
       display: grid;
       gap: 14px;
       padding: 12px;
@@ -127,6 +128,7 @@
     .section-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
     .section-label span { font-size: 11px; font-weight: 800; color: var(--text-muted); }
     .swatch-line { display: grid; grid-template-columns: 84px 1fr; gap: 10px; align-items: end; }
+    .size-line { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
     .actions { display: grid; gap: 10px; margin-top: 4px; }
     .btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 15px 14px; border-radius: 8px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.16s, opacity 0.16s, background 0.16s; }
     .btn:active { transform: translateY(1px); }
@@ -147,7 +149,7 @@
       font-weight: 600;
     }
     .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.96); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 10px 0 22px 0; z-index: 10; max-width: 600px; margin: 0 auto; backdrop-filter: blur(12px); }
-    .nav-item { min-width: 76px; min-height: 52px; border-radius: 10px; background: none; border: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .nav-item { min-width: 64px; min-height: 52px; border-radius: 10px; background: none; border: none; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 700; cursor: pointer; }
     .nav-item.active { color: var(--primary); }
     .nav-item:focus { outline: none; }
     .nav-item:focus-visible { background: #f4f6f8; }
@@ -161,14 +163,31 @@
     .hero-list-title { margin-bottom: 12px; font-size: 14px; font-weight: 800; color: var(--primary); }
     .hero-item {
       display: grid;
-      grid-template-columns: 96px 1fr;
+      grid-template-columns: 36px 96px 1fr;
       gap: 12px;
       align-items: center;
       padding: 10px;
       border: 1px solid var(--border);
       border-radius: 10px;
       background: #fbfcfd;
+      transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
     }
+    .hero-item.dragging { opacity: 0.68; border-color: var(--primary); box-shadow: 0 10px 24px rgba(17,17,17,0.12); transform: scale(0.99); }
+    .hero-item.drag-over { border-color: var(--primary); }
+    .hero-drag-handle {
+      width: 36px;
+      height: 44px;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text-muted);
+      display: grid;
+      place-items: center;
+      cursor: grab;
+      touch-action: none;
+    }
+    .hero-drag-handle:active { cursor: grabbing; }
+    .hero-drag-handle svg { width: 18px; height: 18px; }
     .hero-item img { width: 96px; height: 72px; border-radius: 8px; object-fit: cover; background: var(--field-bg); }
     .hero-item-info { display: grid; gap: 8px; min-width: 0; }
     .hero-item-title { font-size: 13px; font-weight: 800; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -187,13 +206,45 @@
     .mini-btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .mini-btn-danger { border-color: #f1b8b4; color: var(--red); }
     .status-message { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+    .dashboard-product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; }
+    .product-card { position: relative; cursor: default; }
+    .product-img-wrap { position: relative; aspect-ratio: 3/4; overflow: hidden; background: #f1f2f3; margin-bottom: 12px; }
+    .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
+    .product-card:hover .product-img-wrap img { transform: scale(1.04); }
+    .badge { position: absolute; top: 10px; left: 10px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; padding: 3px 7px; text-transform: uppercase; }
+    .product-info { padding: 0 2px; }
+    .product-name { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; line-height: 1.4; color: var(--primary); direction: ltr; text-align: left; }
+    .price-row { display: flex; align-items: center; gap: 8px; direction: ltr; justify-content: flex-start; }
+    .price-sale { font-size: 13px; font-weight: 800; color: var(--primary); }
+    .price-reg { font-size: 12px; color: var(--text-muted); text-decoration: line-through; }
+    .product-meta { margin-top: 8px; color: var(--text-muted); font-size: 12px; line-height: 1.45; }
+    .product-actions { margin-top: 10px; }
+    .delete-product-btn,
+    .inline-remove {
+      border: 1px solid #f1b8b4;
+      background: #fff;
+      color: var(--red);
+      border-radius: 7px;
+      padding: 9px 10px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .delete-product-btn { width: 100%; }
+    .delete-product-btn:disabled,
+    .inline-remove:disabled { opacity: 0.45; cursor: not-allowed; }
     @media (max-width: 420px) {
       main { padding: 16px; padding-bottom: 100px; }
       header h1 { font-size: 16px; }
       .header-bar { padding: 0 12px; }
       .form-row,
-      .swatch-line { grid-template-columns: 1fr; }
+      .swatch-line,
+      .size-line { grid-template-columns: 1fr; }
       .card { padding: 14px; }
+      .dashboard-product-grid { gap: 16px 12px; }
+      .hero-item { grid-template-columns: 34px 82px 1fr; }
+      .hero-item img { width: 82px; height: 66px; }
     }
   </style>
 </head>
@@ -225,6 +276,14 @@
       <div id="ordersContainer"><div class="loader">جاري تحميل الطلبات...</div></div>
     </div>
 
+    <div id="productsTab" class="tab-content">
+      <div class="page-title">
+        <h2>المنتجات</h2>
+        <span class="page-kicker">المتجر</span>
+      </div>
+      <div id="productsContainer"><div class="loader">جاري تحميل المنتجات...</div></div>
+    </div>
+
     <div id="addProductTab" class="tab-content">
       <div class="page-title">
         <h2>إضافة منتج</h2>
@@ -238,7 +297,14 @@
             <div class="form-group"><label>السعر</label><input type="number" id="prodPrice" required /></div>
             <div class="form-group"><label>المخزون</label><input type="number" id="prodStock" required /></div>
           </div>
-          <div class="form-group"><label>المقاسات</label><input type="text" id="prodSizes" required placeholder="مثال: S, M, L, XL" /></div>
+          <div id="sizesContainer">
+            <div class="size-section">
+              <div class="section-label"><span>مقاس 1</span></div>
+              <div class="size-line">
+                <div class="form-group"><label>المقاس</label><input type="text" class="size-value" required placeholder="مثال: S" /></div>
+              </div>
+            </div>
+          </div>
           <div id="colorsContainer">
             <div class="color-section">
               <div class="section-label"><span>لون المنتج</span></div>
@@ -249,6 +315,7 @@
             </div>
           </div>
           <div class="actions">
+            <button type="button" class="btn btn-secondary" onclick="addSizeSection()">+ مقاس آخر</button>
             <button type="button" class="btn btn-secondary" onclick="addColorSection()">+ لون آخر</button>
             <button type="submit" class="btn" id="submitProductBtn">حفظ المنتج</button>
           </div>
@@ -282,6 +349,10 @@
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
       الطلبات
     </button>
+    <button class="nav-item" onclick="switchTab('productsTab', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+      المنتجات
+    </button>
     <button class="nav-item" onclick="switchTab('addProductTab', this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"></path></svg>
       منتج
@@ -298,7 +369,7 @@
      * DASHBOARD CHANGES SUMMARY:
      * - Hero images are managed as one database row per image.
      * - Uploads go to Supabase Storage bucket "hero" then save image_url/storage_path.
-     * - Dashboard supports preview, ordering, and delete with explicit error handling.
+     * - Dashboard supports product listing/deletion, multi-size input, drag ordering, and delete with explicit error handling.
      */
     window.onload = () => {
       console.log("WINDOW ONLOAD - DASHBOARD START");
@@ -325,6 +396,8 @@
       document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
       if (btn) btn.classList.add('active');
       if (id === 'ordersTab') fetchOrders();
+      if (id === 'productsTab') fetchProducts();
+      if (id === 'heroTab') fetchHeroImages();
     };
 
     window.handleLogout = () => {
@@ -339,6 +412,25 @@
       div.className = 'color-section';
       div.innerHTML = `<div class="section-label"><span>لون ${idx + 1}</span></div><div class="swatch-line"><div class="form-group"><label>اللون</label><input type="color" class="color-code" value="#ffffff" /></div><div class="form-group"><label>الصور</label><input type="file" class="color-images" multiple accept="image/*" onchange="previewImages(this, ${idx})" /><div class="image-preview-container" id="preview-${idx}"></div></div></div>`;
       container.appendChild(div);
+    };
+
+    window.addSizeSection = () => {
+      const container = document.getElementById('sizesContainer');
+      const idx = document.querySelectorAll('.size-section').length;
+      const div = document.createElement('div');
+      div.className = 'size-section';
+      div.innerHTML = `<div class="section-label"><span>مقاس ${idx + 1}</span></div><div class="size-line"><div class="form-group"><label>المقاس</label><input type="text" class="size-value" required placeholder="مثال: XL" /></div><button type="button" class="inline-remove" onclick="removeSizeSection(this)">حذف</button></div>`;
+      container.appendChild(div);
+      div.querySelector('.size-value').focus();
+    };
+
+    window.removeSizeSection = (button) => {
+      const sections = document.querySelectorAll('.size-section');
+      if (sections.length <= 1) return;
+      button.closest('.size-section').remove();
+      document.querySelectorAll('.size-section .section-label span').forEach((label, index) => {
+        label.textContent = `مقاس ${index + 1}`;
+      });
     };
 
     window.previewImages = (input, idx) => {
@@ -359,6 +451,9 @@
     let selectedHeroObjectUrls = [];
     let heroSchemaReady = false;
     let productDetailsSchemaReady = false;
+    let products = [];
+    let heroDragIndex = null;
+    let heroPointerDrag = null;
 
     function getHeroSetupMessage(errorMessage) {
       return `إعدادات صور الهيرو غير مكتملة في Supabase. شغّل ملف dashboard/setup-hero-images.sql من SQL Editor ثم أعد تحميل الصفحة. التفاصيل: ${errorMessage}`;
@@ -432,12 +527,76 @@
       return uploaded.publicUrl;
     }
 
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function collectSizes() {
+      return Array.from(document.querySelectorAll('.size-value'))
+        .map(input => input.value.trim())
+        .filter(Boolean);
+    }
+
+    function getProductImageUrls(product) {
+      const urls = [];
+      if (product.image_url) urls.push(product.image_url);
+      if (Array.isArray(product.colors)) {
+        product.colors.forEach(color => {
+          if (!Array.isArray(color.images)) return;
+          color.images.forEach(url => {
+            if (url && !urls.includes(url)) urls.push(url);
+          });
+        });
+      }
+      return urls;
+    }
+
+    function getProductStoragePaths(product) {
+      return getProductImageUrls(product)
+        .map(url => extractStoragePath(url, productsBucket))
+        .filter(Boolean)
+        .filter((path, index, paths) => paths.indexOf(path) === index);
+    }
+
+    function extractStoragePath(url, bucket) {
+      if (!url) return '';
+      const markers = [`/storage/v1/object/public/${bucket}/`, `/object/public/${bucket}/`];
+      const marker = markers.find(value => url.includes(value));
+      if (!marker) return '';
+      const rawPath = url.split(marker)[1].split('?')[0];
+      try {
+        return decodeURIComponent(rawPath);
+      } catch (err) {
+        return rawPath;
+      }
+    }
+
     async function checkProductDetailsSchema() {
       const { error } = await supabaseClient
         .from('products')
         .select('description,stock,sizes,colors')
         .limit(1);
       productDetailsSchemaReady = !error;
+    }
+
+    function resetProductForm() {
+      document.getElementById('addProductForm').reset();
+      document.querySelectorAll('.size-section').forEach((section, index) => {
+        if (index > 0) section.remove();
+      });
+      document.querySelector('.size-section .section-label span').textContent = 'مقاس 1';
+      document.querySelectorAll('.color-section').forEach((section, index) => {
+        if (index > 0) section.remove();
+      });
+      document.querySelectorAll('.image-preview-container[id^="preview-"]').forEach(container => {
+        container.innerHTML = '';
+      });
     }
 
     document.getElementById('addProductForm').addEventListener('submit', async (e) => {
@@ -448,7 +607,10 @@
       const uploadedPaths = [];
       try {
         const colors = [];
+        const sizes = collectSizes();
         let mainImageUrl = '';
+
+        if (!sizes.length) throw new Error('أضف مقاس واحد على الأقل للمنتج');
 
         for (const s of document.querySelectorAll('.color-section')) {
           const code = s.querySelector('.color-code').value;
@@ -464,6 +626,10 @@
         }
 
         if (!mainImageUrl) throw new Error('يرجى اختيار صورة واحدة على الأقل للمنتج');
+        if (!productDetailsSchemaReady) await checkProductDetailsSchema();
+        if (!productDetailsSchemaReady) {
+          throw new Error('إعدادات تفاصيل المنتجات غير مكتملة في Supabase. شغّل ملف dashboard/setup-hero-images.sql من SQL Editor ثم أعد تحميل الصفحة.');
+        }
 
         const productRow = {
           name: document.getElementById('prodName').value,
@@ -475,7 +641,7 @@
         if (productDetailsSchemaReady) {
           productRow.description = document.getElementById('prodDesc').value;
           productRow.stock = parseInt(document.getElementById('prodStock').value);
-          productRow.sizes = document.getElementById('prodSizes').value.split(',').map(s => s.trim()).filter(Boolean);
+          productRow.sizes = sizes;
           productRow.colors = colors;
         }
 
@@ -483,7 +649,8 @@
         if (error) throw new Error(`تعذر حفظ المنتج في الداتا بيز: ${error.message}`);
 
         alert('تم الحفظ');
-        location.reload();
+        resetProductForm();
+        fetchProducts();
       } catch (err) {
         if (uploadedPaths.length) {
           await supabaseClient.storage.from(productsBucket).remove(uploadedPaths);
@@ -494,7 +661,95 @@
       btn.textContent = 'حفظ المنتج';
     });
 
-    function renderHeroImages() {
+    async function fetchProducts() {
+      const cont = document.getElementById('productsContainer');
+      if (!cont) return;
+      cont.innerHTML = '<div class="card"><div class="loader">جاري تحميل المنتجات...</div></div>';
+
+      const { data, error } = await supabaseClient
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        cont.innerHTML = `<div class="card empty-state"><div><h3>تعذر تحميل المنتجات</h3><p>${escapeHtml(error.message)}</p></div></div>`;
+        return;
+      }
+
+      products = data || [];
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const cont = document.getElementById('productsContainer');
+      if (!cont) return;
+
+      if (!products.length) {
+        cont.innerHTML = '<div class="card empty-state"><div><h3>لا توجد منتجات</h3><p>أي منتج تحفظه من لوحة التحكم سيظهر هنا بنفس شكل كروت المتجر.</p></div></div>';
+        return;
+      }
+
+      const grid = document.createElement('div');
+      grid.className = 'dashboard-product-grid';
+      cont.innerHTML = '';
+      cont.appendChild(grid);
+
+      products.forEach(product => {
+        const imageUrls = getProductImageUrls(product);
+        const imageUrl = imageUrls[0] || '';
+        const safePrice = Number(product.price || 0);
+        const productName = product.name || 'Product';
+        const sizes = Array.isArray(product.sizes) ? product.sizes.filter(Boolean) : [];
+        const colors = Array.isArray(product.colors) ? product.colors : [];
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          <div class="product-img-wrap">
+            ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(productName)}" />` : '<div class="loader">بدون صورة</div>'}
+            ${product.old_price ? '<span class="badge">Sale</span>' : ''}
+          </div>
+          <div class="product-info">
+            <p class="product-name">${escapeHtml(productName)}</p>
+            <div class="price-row">
+              <span class="price-sale">LE ${safePrice.toLocaleString()}.00</span>
+              ${product.old_price ? `<span class="price-reg">LE ${Number(product.old_price).toLocaleString()}.00</span>` : ''}
+            </div>
+            <div class="product-meta">${sizes.length ? `${sizes.length} مقاس` : 'بدون مقاسات'} | ${colors.length ? `${colors.length} لون` : 'بدون ألوان'}</div>
+            <div class="product-actions">
+              <button type="button" class="delete-product-btn" data-product-id="${escapeHtml(product.id)}">حذف المنتج</button>
+            </div>
+          </div>
+        `;
+
+        card.querySelector('.delete-product-btn').addEventListener('click', () => deleteProduct(product));
+        grid.appendChild(card);
+      });
+    }
+
+    async function deleteProduct(product) {
+      if (!confirm(`هل تريد حذف "${product.name || 'هذا المنتج'}"؟`)) return;
+
+      const buttons = document.querySelectorAll('.delete-product-btn');
+      buttons.forEach(button => { button.disabled = true; });
+
+      try {
+        const paths = getProductStoragePaths(product);
+        const { error } = await supabaseClient.from('products').delete().eq('id', product.id);
+        if (error) throw new Error(`تعذر حذف المنتج: ${error.message}`);
+
+        if (paths.length) {
+          const { error: storageError } = await supabaseClient.storage.from(productsBucket).remove(paths);
+          if (storageError) console.warn('Could not delete product files:', storageError.message);
+        }
+
+        await fetchProducts();
+      } catch (err) {
+        alert(err.message);
+        buttons.forEach(button => { button.disabled = false; });
+      }
+    }
+
+    function renderHeroImages(activeDragIndex = null) {
       const cont = document.getElementById('heroImagesList');
       if (!cont) return;
       cont.innerHTML = '';
@@ -507,6 +762,48 @@
       heroImages.forEach((item, index) => {
         const row = document.createElement('div');
         row.className = 'hero-item';
+        if (index === activeDragIndex) row.classList.add('dragging');
+        row.draggable = true;
+        row.dataset.index = index;
+
+        row.addEventListener('dragstart', (event) => {
+          heroDragIndex = index;
+          row.classList.add('dragging');
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', String(index));
+        });
+
+        row.addEventListener('dragend', () => {
+          heroDragIndex = null;
+          row.classList.remove('dragging');
+          document.querySelectorAll('.hero-item.drag-over').forEach(itemNode => itemNode.classList.remove('drag-over'));
+        });
+
+        row.addEventListener('dragover', (event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          row.classList.add('drag-over');
+        });
+
+        row.addEventListener('dragleave', () => {
+          row.classList.remove('drag-over');
+        });
+
+        row.addEventListener('drop', (event) => {
+          event.preventDefault();
+          row.classList.remove('drag-over');
+          const transferIndex = event.dataTransfer.getData('text/plain');
+          const fromIndex = transferIndex !== '' ? Number(transferIndex) : heroDragIndex;
+          moveHeroImageTo(fromIndex, index);
+        });
+
+        const dragHandle = document.createElement('button');
+        dragHandle.type = 'button';
+        dragHandle.className = 'hero-drag-handle';
+        dragHandle.setAttribute('aria-label', 'ترتيب الصورة بالسحب');
+        dragHandle.title = 'اسحب لترتيب الصورة';
+        dragHandle.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01"></path></svg>';
+        dragHandle.addEventListener('pointerdown', (event) => startHeroPointerDrag(event, index));
 
         const img = document.createElement('img');
         img.src = item.image_url;
@@ -522,22 +819,6 @@
         const actions = document.createElement('div');
         actions.className = 'hero-item-actions';
 
-        const upBtn = document.createElement('button');
-        upBtn.type = 'button';
-        upBtn.className = 'mini-btn';
-        upBtn.textContent = '↑ أعلى';
-        upBtn.disabled = index === 0;
-        upBtn.dataset.heroAction = 'move';
-        upBtn.addEventListener('click', () => moveHeroImage(index, -1));
-
-        const downBtn = document.createElement('button');
-        downBtn.type = 'button';
-        downBtn.className = 'mini-btn';
-        downBtn.textContent = '↓ أسفل';
-        downBtn.disabled = index === heroImages.length - 1;
-        downBtn.dataset.heroAction = 'move';
-        downBtn.addEventListener('click', () => moveHeroImage(index, 1));
-
         const deleteBtn = document.createElement('button');
         deleteBtn.type = 'button';
         deleteBtn.className = 'mini-btn mini-btn-danger';
@@ -545,9 +826,9 @@
         deleteBtn.dataset.heroAction = 'delete';
         deleteBtn.addEventListener('click', () => deleteHeroImage(item));
 
-        actions.append(upBtn, downBtn, deleteBtn);
+        actions.append(deleteBtn);
         info.append(title, actions);
-        row.append(img, info);
+        row.append(dragHandle, img, info);
         cont.appendChild(row);
       });
     }
@@ -579,19 +860,85 @@
       if (failed) throw new Error(`تعذر حفظ ترتيب الصور: ${failed.error.message}`);
     }
 
-    async function moveHeroImage(index, direction) {
-      const targetIndex = index + direction;
-      if (targetIndex < 0 || targetIndex >= heroImages.length) return;
+    function reorderHeroImages(fromIndex, toIndex) {
+      if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex)) return false;
+      if (fromIndex < 0 || toIndex < 0 || fromIndex >= heroImages.length || toIndex >= heroImages.length) return false;
+      if (fromIndex === toIndex) return false;
+      const [moved] = heroImages.splice(fromIndex, 1);
+      heroImages.splice(toIndex, 0, moved);
+      return true;
+    }
+
+    async function moveHeroImageTo(fromIndex, toIndex) {
+      if (!Number.isInteger(fromIndex) || !Number.isInteger(toIndex) || fromIndex === toIndex) return;
 
       setHeroBusy(true);
       const originalOrder = [...heroImages];
       try {
-        [heroImages[index], heroImages[targetIndex]] = [heroImages[targetIndex], heroImages[index]];
+        if (reorderHeroImages(fromIndex, toIndex)) {
+          renderHeroImages();
+          setHeroBusy(true);
+          await saveHeroOrder();
+          await fetchHeroImages();
+        }
+      } catch (err) {
+        heroImages = originalOrder;
         renderHeroImages();
+        alert(err.message);
+      } finally {
+        setHeroBusy(false);
+      }
+    }
+
+    function startHeroPointerDrag(event, index) {
+      if (event.button !== undefined && event.button !== 0) return;
+      event.preventDefault();
+      heroPointerDrag = {
+        currentIndex: index,
+        originalOrder: [...heroImages],
+        changed: false
+      };
+      document.body.style.userSelect = 'none';
+      window.addEventListener('pointermove', handleHeroPointerMove);
+      window.addEventListener('pointerup', finishHeroPointerDrag, { once: true });
+      window.addEventListener('pointercancel', finishHeroPointerDrag, { once: true });
+      renderHeroImages(index);
+    }
+
+    function handleHeroPointerMove(event) {
+      if (!heroPointerDrag) return;
+      const target = document.elementFromPoint(event.clientX, event.clientY);
+      const row = target && target.closest ? target.closest('.hero-item') : null;
+      if (!row) return;
+      const targetIndex = Number(row.dataset.index);
+      if (!Number.isInteger(targetIndex) || targetIndex === heroPointerDrag.currentIndex) return;
+      if (!reorderHeroImages(heroPointerDrag.currentIndex, targetIndex)) return;
+      heroPointerDrag.currentIndex = targetIndex;
+      heroPointerDrag.changed = true;
+      renderHeroImages(targetIndex);
+    }
+
+    async function finishHeroPointerDrag() {
+      window.removeEventListener('pointermove', handleHeroPointerMove);
+      window.removeEventListener('pointerup', finishHeroPointerDrag);
+      window.removeEventListener('pointercancel', finishHeroPointerDrag);
+      document.body.style.userSelect = '';
+
+      const drag = heroPointerDrag;
+      heroPointerDrag = null;
+      if (!drag) return;
+
+      if (!drag.changed) {
+        renderHeroImages();
+        return;
+      }
+
+      setHeroBusy(true);
+      try {
         await saveHeroOrder();
         await fetchHeroImages();
       } catch (err) {
-        heroImages = originalOrder;
+        heroImages = drag.originalOrder;
         renderHeroImages();
         alert(err.message);
       }
@@ -671,6 +1018,7 @@
 
     checkAuth();
     checkProductDetailsSchema();
+    fetchProducts();
     fetchHeroImages();
     };
   </script>
