@@ -244,7 +244,7 @@
               <div class="section-label"><span>لون المنتج</span></div>
               <div class="swatch-line">
                 <div class="form-group"><label>اللون</label><input type="color" class="color-code" value="#000000" /></div>
-                <div class="form-group"><label>الصور</label><input type="file" class="color-images" multiple onchange="previewImages(this, 0)" /><div class="image-preview-container" id="preview-0"></div></div>
+                <div class="form-group"><label>الصور</label><input type="file" class="color-images" multiple accept="image/*" onchange="previewImages(this, 0)" /><div class="image-preview-container" id="preview-0"></div></div>
               </div>
             </div>
           </div>
@@ -337,7 +337,7 @@
       const idx = document.querySelectorAll('.color-section').length;
       const div = document.createElement('div');
       div.className = 'color-section';
-      div.innerHTML = `<div class="section-label"><span>لون ${idx + 1}</span></div><div class="swatch-line"><div class="form-group"><label>اللون</label><input type="color" class="color-code" value="#ffffff" /></div><div class="form-group"><label>الصور</label><input type="file" class="color-images" multiple onchange="previewImages(this, ${idx})" /><div class="image-preview-container" id="preview-${idx}"></div></div></div>`;
+      div.innerHTML = `<div class="section-label"><span>لون ${idx + 1}</span></div><div class="swatch-line"><div class="form-group"><label>اللون</label><input type="color" class="color-code" value="#ffffff" /></div><div class="form-group"><label>الصور</label><input type="file" class="color-images" multiple accept="image/*" onchange="previewImages(this, ${idx})" /><div class="image-preview-container" id="preview-${idx}"></div></div></div>`;
       container.appendChild(div);
     };
 
@@ -354,9 +354,11 @@
     };
 
     const heroBucket = 'hero';
+    const productsBucket = 'products';
     let heroImages = [];
     let selectedHeroObjectUrls = [];
     let heroSchemaReady = false;
+    let productDetailsSchemaReady = false;
 
     function getHeroSetupMessage(errorMessage) {
       return `إعدادات صور الهيرو غير مكتملة في Supabase. شغّل ملف dashboard/setup-hero-images.sql من SQL Editor ثم أعد تحميل الصفحة. التفاصيل: ${errorMessage}`;
@@ -430,31 +432,66 @@
       return uploaded.publicUrl;
     }
 
+    async function checkProductDetailsSchema() {
+      const { error } = await supabaseClient
+        .from('products')
+        .select('description,stock,sizes,colors')
+        .limit(1);
+      productDetailsSchemaReady = !error;
+    }
+
     document.getElementById('addProductForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('submitProductBtn');
       btn.disabled = true;
+      btn.textContent = 'جاري الحفظ...';
+      const uploadedPaths = [];
       try {
         const colors = [];
+        let mainImageUrl = '';
+
         for (const s of document.querySelectorAll('.color-section')) {
           const code = s.querySelector('.color-code').value;
           const files = s.querySelector('.color-images').files;
           const urls = [];
-          for (const f of files) urls.push(await uploadImage(f, 'products'));
+          for (const f of files) {
+            const uploaded = await uploadFile(f, productsBucket);
+            uploadedPaths.push(uploaded.path);
+            urls.push(uploaded.publicUrl);
+            if (!mainImageUrl) mainImageUrl = uploaded.publicUrl;
+          }
           colors.push({ color: code, images: urls });
         }
-        await supabaseClient.from('products').insert([{
+
+        if (!mainImageUrl) throw new Error('يرجى اختيار صورة واحدة على الأقل للمنتج');
+
+        const productRow = {
           name: document.getElementById('prodName').value,
-          description: document.getElementById('prodDesc').value,
           price: parseFloat(document.getElementById('prodPrice').value),
-          stock: parseInt(document.getElementById('prodStock').value),
-          sizes: document.getElementById('prodSizes').value.split(',').map(s => s.trim()),
-          colors
-        }]);
+          old_price: null,
+          image_url: mainImageUrl
+        };
+
+        if (productDetailsSchemaReady) {
+          productRow.description = document.getElementById('prodDesc').value;
+          productRow.stock = parseInt(document.getElementById('prodStock').value);
+          productRow.sizes = document.getElementById('prodSizes').value.split(',').map(s => s.trim()).filter(Boolean);
+          productRow.colors = colors;
+        }
+
+        const { error } = await supabaseClient.from('products').insert([productRow]);
+        if (error) throw new Error(`تعذر حفظ المنتج في الداتا بيز: ${error.message}`);
+
         alert('تم الحفظ');
         location.reload();
-      } catch (err) { alert(err.message); }
+      } catch (err) {
+        if (uploadedPaths.length) {
+          await supabaseClient.storage.from(productsBucket).remove(uploadedPaths);
+        }
+        alert(err.message);
+      }
       btn.disabled = false;
+      btn.textContent = 'حفظ المنتج';
     });
 
     function renderHeroImages() {
@@ -633,6 +670,7 @@
     });
 
     checkAuth();
+    checkProductDetailsSchema();
     fetchHeroImages();
     };
   </script>
