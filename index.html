@@ -342,6 +342,31 @@
         </div>
       </div>
     </div>
+
+    <div id="governoratesTab" class="tab-content">
+      <div class="page-title">
+        <h2>المحافظات والشحن</h2>
+      </div>
+      <!-- Settings card for wallet phone -->
+      <div class="card" style="margin-bottom:14px;">
+        <div class="section-label"><span>رقم المحفظة الإلكترونية</span></div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>رقم التحويل (Vodafone Cash / InstaPay)</label>
+            <input type="tel" id="walletPhoneInput" placeholder="01xxxxxxxxx" />
+          </div>
+          <div class="actions">
+            <button class="btn" onclick="saveWalletPhone()">حفظ الرقم</button>
+          </div>
+        </div>
+      </div>
+      <!-- Governorates list -->
+      <div class="card">
+        <div class="section-label"><span>قائمة المحافظات</span></div>
+        <div id="governoratesContainer"><div class="loader">جاري التحميل...</div></div>
+      </div>
+    </div>
+
   </main>
 
   <nav class="bottom-nav">
@@ -360,6 +385,10 @@
     <button class="nav-item" onclick="switchTab('heroTab', this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
       الواجهة
+    </button>
+    <button class="nav-item" onclick="switchTab('governoratesTab', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      الشحن
     </button>
   </nav>
 
@@ -398,6 +427,7 @@
       if (id === 'ordersTab') fetchOrders();
       if (id === 'productsTab') fetchProducts();
       if (id === 'heroTab') fetchHeroImages();
+      if (id === 'governoratesTab') { fetchGovernorates(); loadWalletPhoneSetting(); }
     };
 
     window.handleLogout = () => {
@@ -501,7 +531,10 @@
       data.forEach(o => {
         const div = document.createElement('div');
         div.className = 'card';
-        div.innerHTML = `<div class="order-header"><span class="order-date">${new Date(o.created_at).toLocaleString('ar-EG')}</span><span class="order-status">جديد</span></div><div class="order-info"><strong>${o.customer_name}</strong><p>${o.phone || 'بدون رقم'} | ${o.address || 'بدون عنوان'}</p></div><div class="order-total">${o.total_price} جنيه</div>`;
+        const paymentLabel = o.payment_method === 'ewallet' ? '📱 محفظة إلكترونية' : '💵 عند الاستلام';
+        const proofLink = o.proof_url ? `<a href="${escapeHtml(o.proof_url)}" target="_blank" style="color:#2d7a2d;font-size:12px;">📎 إثبات التحويل</a>` : '';
+        const items = Array.isArray(o.items) ? o.items.map(i => escapeHtml(i.name)).join('، ') : '';
+        div.innerHTML = `<div class="order-header"><span class="order-date">${new Date(o.created_at).toLocaleString('ar-EG')}</span><span class="order-status">${paymentLabel}</span></div><div class="order-info"><strong>${escapeHtml(o.customer_name || '')}</strong><p>${escapeHtml(o.phone || 'بدون رقم')} | ${escapeHtml(o.address || 'بدون عنوان')}</p>${items ? `<p style="font-size:12px;color:#555;margin-top:4px;">📦 ${items}</p>` : ''}${proofLink}</div><div class="order-total">${Number(o.total_price || 0).toLocaleString()} جنيه</div>`;
         cont.appendChild(div);
       });
     }
@@ -1015,6 +1048,97 @@
       btn.disabled = false;
       btn.textContent = 'رفع الصور';
     });
+
+    // ── Governorates ──────────────────────────────────────────
+    const EG_GOVERNORATES = [
+      {name_ar:'القاهرة',name_en:'Cairo'},{name_ar:'الجيزة',name_en:'Giza'},
+      {name_ar:'الإسكندرية',name_en:'Alexandria'},{name_ar:'الدقهلية',name_en:'Dakahlia'},
+      {name_ar:'البحر الأحمر',name_en:'Red Sea'},{name_ar:'البحيرة',name_en:'Beheira'},
+      {name_ar:'الفيوم',name_en:'Faiyum'},{name_ar:'الغربية',name_en:'Gharbia'},
+      {name_ar:'الإسماعيلية',name_en:'Ismailia'},{name_ar:'المنوفية',name_en:'Menofia'},
+      {name_ar:'المنيا',name_en:'Minya'},{name_ar:'القليوبية',name_en:'Qalyubia'},
+      {name_ar:'الوادي الجديد',name_en:'New Valley'},{name_ar:'السويس',name_en:'Suez'},
+      {name_ar:'اسوان',name_en:'Aswan'},{name_ar:'اسيوط',name_en:'Asyut'},
+      {name_ar:'بني سويف',name_en:'Beni Suef'},{name_ar:'بورسعيد',name_en:'Port Said'},
+      {name_ar:'دمياط',name_en:'Damietta'},{name_ar:'جنوب سيناء',name_en:'South Sinai'},
+      {name_ar:'كفر الشيخ',name_en:'Kafr El Sheikh'},{name_ar:'مطروح',name_en:'Matruh'},
+      {name_ar:'الأقصر',name_en:'Luxor'},{name_ar:'قنا',name_en:'Qena'},
+      {name_ar:'شمال سيناء',name_en:'North Sinai'},{name_ar:'سوهاج',name_en:'Sohag'},
+      {name_ar:'الشرقية',name_en:'Sharqia'},{name_ar:'السادات',name_en:'Sadat City'}
+    ];
+
+    async function fetchGovernorates() {
+      const cont = document.getElementById('governoratesContainer');
+      if (!cont) return;
+      cont.innerHTML = '<div class="loader">جاري التحميل...</div>';
+
+      // Try to get from DB first
+      const { data: dbData, error } = await supabaseClient.from('governorates').select('*').order('name_ar');
+
+      let govList = [];
+      if (!error && dbData && dbData.length) {
+        govList = dbData;
+      } else {
+        // Seed from EG_GOVERNORATES list
+        await seedGovernorates();
+        const { data: seeded } = await supabaseClient.from('governorates').select('*').order('name_ar');
+        govList = seeded || [];
+      }
+
+      renderGovernoratesTable(govList);
+    }
+
+    async function seedGovernorates() {
+      const rows = EG_GOVERNORATES.map(g => ({ name_ar: g.name_ar, name_en: g.name_en, shipping_price: 50 }));
+      await supabaseClient.from('governorates').upsert(rows, { onConflict: 'name_en' });
+    }
+
+    function renderGovernoratesTable(govList) {
+      const cont = document.getElementById('governoratesContainer');
+      if (!govList.length) { cont.innerHTML = '<div class="status-message">لا توجد محافظات</div>'; return; }
+
+      const table = document.createElement('div');
+      table.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr 100px 80px;gap:8px;font-size:11px;font-weight:800;color:#888;text-transform:uppercase;padding:0 4px 8px;border-bottom:1px solid #eee;">
+          <span>المحافظة</span><span>Governorate</span><span>سعر الشحن (LE)</span><span></span>
+        </div>`;
+
+      govList.forEach(g => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 100px 80px;gap:8px;align-items:center;padding:10px 4px;border-bottom:1px solid #f5f5f5;';
+        row.innerHTML = `
+          <span style="font-size:14px;">${escapeHtml(g.name_ar || '')}</span>
+          <span style="font-size:13px;color:#888;">${escapeHtml(g.name_en || '')}</span>
+          <input type="number" min="0" step="1" value="${Number(g.shipping_price || 0)}" id="gov-price-${g.id}" style="padding:6px 8px;border:1px solid #e0e0e0;border-radius:6px;font-size:14px;width:90px;" />
+          <button class="mini-btn" onclick="saveGovPrice('${g.id}')" style="padding:6px 10px;">حفظ</button>`;
+        table.appendChild(row);
+      });
+      cont.innerHTML = '';
+      cont.appendChild(table);
+    }
+
+    window.saveGovPrice = async (govId) => {
+      const input = document.getElementById(`gov-price-${govId}`);
+      if (!input) return;
+      const price = parseFloat(input.value) || 0;
+      const { error } = await supabaseClient.from('governorates').update({ shipping_price: price }).eq('id', govId);
+      if (error) { alert('فشل الحفظ: ' + error.message); return; }
+      input.style.borderColor = '#2d7a2d';
+      setTimeout(() => { input.style.borderColor = ''; }, 1500);
+    };
+
+    // ── Wallet phone setting ──────────────────────────────────
+    async function loadWalletPhoneSetting() {
+      const { data, error } = await supabaseClient.from('settings').select('value').eq('key','wallet_phone').single();
+      if (!error && data) document.getElementById('walletPhoneInput').value = data.value || '';
+    }
+
+    window.saveWalletPhone = async () => {
+      const val = (document.getElementById('walletPhoneInput').value || '').trim();
+      const { error } = await supabaseClient.from('settings').upsert({ key: 'wallet_phone', value: val }, { onConflict: 'key' });
+      if (error) { alert('فشل الحفظ: ' + error.message); return; }
+      alert('تم حفظ الرقم بنجاح');
+    };
 
     checkAuth();
     checkProductDetailsSchema();
