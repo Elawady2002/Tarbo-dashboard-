@@ -264,6 +264,13 @@
     <div id="orderModalContent" style="padding: 16px; padding-bottom: 100px;"></div>
   </div>
 
+  <div id="imageViewerOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:10000; align-items:center; justify-content:center; flex-direction:column; padding:20px;">
+    <button onclick="closeImageViewer()" style="position:absolute; top:20px; right:20px; background:none; border:none; color:#fff; cursor:pointer; padding:10px;">
+      <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+    </button>
+    <img id="fullScreenImage" src="" style="max-width:100%; max-height:85vh; object-fit:contain; border-radius:8px;" />
+  </div>
+
   <header>
     <div class="header-bar">
       <div style="width: 40px;"></div>
@@ -612,7 +619,7 @@
       if (Array.isArray(o.items)) {
         itemsHtml = o.items.map(item => `
           <div style="display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border);">
-            ${item.image ? `<img src="${escapeHtml(item.image)}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border);" />` : `<div style="width: 60px; height: 60px; background: var(--field-bg); border-radius: 8px; border: 1px solid var(--border); display: grid; place-items: center; font-size: 10px;">بدون صورة</div>`}
+            ${item.image ? `<img src="${escapeHtml(item.image)}" onclick="openImageViewer('${escapeHtml(item.image)}')" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); cursor: pointer;" />` : `<div style="width: 60px; height: 60px; background: var(--field-bg); border-radius: 8px; border: 1px solid var(--border); display: grid; place-items: center; font-size: 10px;">بدون صورة</div>`}
             <div style="flex: 1;">
               <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">${escapeHtml(item.name)}</div>
               <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 2px;">اللون: <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${escapeHtml(item.color || '#000')}; vertical-align: middle; border: 1px solid #ccc; margin-right: 4px;"></span></div>
@@ -649,13 +656,22 @@
         </div>
 
         ${currentOrdersFilter === 'pending' ? `
-          <button class="btn" style="width: 100%; margin-top: 20px; background: var(--accent);" onclick="markOrderReady(${o.id}, event)">تم التجهيز والشحن ✔</button>
+          <button class="btn" style="width: 100%; margin-top: 24px; background: var(--accent);" onclick="markOrderReady(${o.id}, event)">تم التجهيز والشحن</button>
         ` : `
-          <div style="margin-top: 20px; text-align: center; color: var(--accent); font-weight: 800; background: #e8f5e9; padding: 14px; border-radius: 8px;">تم التجهيز والشحن</div>
+          <div style="margin-top: 24px; text-align: center; color: var(--accent); font-weight: 800; background: #e8f5e9; padding: 14px; border-radius: 8px;">تم التجهيز والشحن</div>
         `}
       `;
       modal.style.display = 'block';
       document.body.style.overflow = 'hidden';
+    };
+
+    window.openImageViewer = (src) => {
+      document.getElementById('fullScreenImage').src = src;
+      document.getElementById('imageViewerOverlay').style.display = 'flex';
+    };
+
+    window.closeImageViewer = () => {
+      document.getElementById('imageViewerOverlay').style.display = 'none';
     };
 
     window.closeOrderModal = () => {
@@ -671,7 +687,7 @@
       if (error) {
         alert('تعذر تحديث حالة الطلب: ' + error.message);
         btn.disabled = false;
-        btn.textContent = 'تم التجهيز والشحن ✔';
+        btn.textContent = 'تم التجهيز والشحن';
         return;
       }
       const o = allOrders.find(x => x.id === orderId);
