@@ -254,6 +254,16 @@
     <div class="loader">جاري التحقق...</div>
   </div>
 
+  <div id="orderModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:var(--bg); z-index:9999; overflow-y:auto; direction:rtl;">
+    <header style="position: sticky; top: 0; background: var(--card-bg); padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; z-index: 10;">
+      <h2 style="font-size: 16px; font-weight: 800; color: var(--primary);">تفاصيل الطلب</h2>
+      <button class="icon-button" onclick="closeOrderModal()" style="margin: 0; padding: 0;">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </header>
+    <div id="orderModalContent" style="padding: 16px; padding-bottom: 100px;"></div>
+  </div>
+
   <header>
     <div class="header-bar">
       <div style="width: 40px;"></div>
@@ -272,6 +282,10 @@
     <div id="ordersTab" class="tab-content active">
       <div class="page-title">
         <h2>الطلبات</h2>
+      </div>
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button id="togglePendingBtn" class="btn" style="flex: 1; padding: 10px;" onclick="setOrdersFilter('pending')">الطلبات الجديدة</button>
+        <button id="toggleReadyBtn" class="btn btn-secondary" style="flex: 1; padding: 10px;" onclick="setOrdersFilter('ready')">الطلبات المجهزة</button>
       </div>
       <div id="ordersContainer"><div class="loader">جاري تحميل الطلبات...</div></div>
     </div>
@@ -515,6 +529,16 @@
       });
     };
 
+    let allOrders = [];
+    let currentOrdersFilter = 'pending';
+
+    window.setOrdersFilter = (filter) => {
+      currentOrdersFilter = filter;
+      document.getElementById('togglePendingBtn').className = filter === 'pending' ? 'btn' : 'btn btn-secondary';
+      document.getElementById('toggleReadyBtn').className = filter === 'ready' ? 'btn' : 'btn btn-secondary';
+      renderOrders();
+    };
+
     async function fetchOrders() {
       const cont = document.getElementById('ordersContainer');
       cont.innerHTML = '<div class="card"><div class="loader">جاري تحميل الطلبات...</div></div>';
@@ -523,29 +547,36 @@
         cont.innerHTML = `<div class="card empty-state"><div><h3>تعذر تحميل الطلبات</h3><p>${error.message}</p></div></div>`;
         return;
       }
-      if (!data.length) {
-        cont.innerHTML = '<div class="card empty-state"><div><h3>لا توجد طلبات</h3><p>أي طلب جديد من المتجر سيظهر هنا مباشرة.</p></div></div>';
+      allOrders = data || [];
+      renderOrders();
+    }
+
+    function renderOrders() {
+      const cont = document.getElementById('ordersContainer');
+      const filtered = allOrders.filter(o => {
+        const isReady = o.status === 'ready' || o.status === 'shipped';
+        return currentOrdersFilter === 'ready' ? isReady : !isReady;
+      });
+
+      if (!filtered.length) {
+        cont.innerHTML = '<div class="card empty-state"><div><h3>لا توجد طلبات</h3></div></div>';
         return;
       }
+
       cont.innerHTML = '';
-      data.forEach(o => {
+      filtered.forEach(o => {
         const div = document.createElement('div');
         div.className = 'card';
+        div.style.cursor = 'pointer';
+        div.onclick = () => openOrderDetails(o);
         
         const isEwallet = o.payment_method === 'ewallet';
         const paymentLabel = isEwallet ? 'محفظة إلكترونية' : 'عند الاستلام';
         const statusBg = isEwallet ? '#e3f2fd' : '#e8f5e9';
         const statusColor = isEwallet ? '#1976d2' : '#2e7d32';
         
-        const proofLink = o.proof_url ? `<a href="${escapeHtml(o.proof_url)}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; background: #f4f6f8; padding: 6px 12px; border-radius: 6px; color: #1976d2; font-size: 12px; font-weight: 600; text-decoration: none; border: 1px solid var(--border); width: fit-content; margin-top: 8px;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> عرض الإثبات</a>` : '';
-        
-        const itemsList = Array.isArray(o.items) ? o.items.map(i => escapeHtml(i.name)).join(' • ') : '';
-        const itemsHtml = itemsList ? `<div style="font-size: 13px; color: var(--text-muted); background: var(--field-bg); padding: 10px; border-radius: 6px; border: 1px solid #f0f1f2; margin-top: 4px;">${itemsList}</div>` : '';
-
-        // Handle variations in column names gracefully
-        const displayPhone = escapeHtml(o.customer_phone || o.phone || 'بدون رقم');
-        const displayAddress = escapeHtml(o.customer_address || o.address || 'بدون عنوان');
         const displayName = escapeHtml(o.customer_name || 'عميل');
+        const itemsList = Array.isArray(o.items) ? o.items.map(i => escapeHtml(i.name)).join(' • ') : '';
 
         div.innerHTML = `
           <div class="order-header">
@@ -553,15 +584,8 @@
             <span class="order-status" style="background: ${statusBg}; color: ${statusColor};">${paymentLabel}</span>
           </div>
           <div class="order-info">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-              <div>
-                <strong style="font-size: 15px; color: var(--primary);">${displayName}</strong>
-                <p style="margin-top: 4px;">${displayAddress}</p>
-                <p style="direction: ltr; text-align: right; font-weight: 500;">${displayPhone}</p>
-              </div>
-            </div>
-            ${itemsHtml}
-            ${proofLink}
+            <strong style="font-size: 15px; color: var(--primary);">${displayName}</strong>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">${itemsList}</p>
           </div>
           <div class="order-total" style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">الإجمالي</span>
@@ -571,6 +595,90 @@
         cont.appendChild(div);
       });
     }
+
+    window.openOrderDetails = (o) => {
+      const modal = document.getElementById('orderModal');
+      const content = document.getElementById('orderModalContent');
+      
+      const isEwallet = o.payment_method === 'ewallet';
+      const paymentLabel = isEwallet ? 'محفظة إلكترونية' : 'عند الاستلام';
+      const proofLink = o.proof_url ? `<a href="${escapeHtml(o.proof_url)}" target="_blank" style="display: inline-block; margin-top: 10px; color: #1976d2; text-decoration: underline; font-size: 13px;">عرض إثبات الدفع</a>` : '';
+      
+      const displayPhone = escapeHtml(o.customer_phone || o.phone || 'بدون رقم');
+      const displayAddress = escapeHtml(o.customer_address || o.address || 'بدون عنوان');
+      const displayName = escapeHtml(o.customer_name || 'عميل');
+      
+      let itemsHtml = '';
+      if (Array.isArray(o.items)) {
+        itemsHtml = o.items.map(item => `
+          <div style="display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border);">
+            ${item.image ? `<img src="${escapeHtml(item.image)}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border);" />` : `<div style="width: 60px; height: 60px; background: var(--field-bg); border-radius: 8px; border: 1px solid var(--border); display: grid; place-items: center; font-size: 10px;">بدون صورة</div>`}
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">${escapeHtml(item.name)}</div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 2px;">اللون: <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: ${escapeHtml(item.color || '#000')}; vertical-align: middle; border: 1px solid #ccc; margin-right: 4px;"></span></div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 2px;">المقاس: ${escapeHtml(item.size || '-')}</div>
+              <div style="font-size: 12px; color: var(--text-muted);">الكمية: ${escapeHtml(item.quantity || 1)}</div>
+            </div>
+            <div style="font-weight: 700; font-size: 14px;">${Number(item.price || 0).toLocaleString()} ج</div>
+          </div>
+        `).join('');
+      }
+
+      content.innerHTML = `
+        <div class="card">
+          <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text-muted);">بيانات العميل</h3>
+          <div style="display: grid; gap: 8px; font-size: 14px;">
+            <div><strong>الاسم:</strong> ${displayName}</div>
+            <div><strong>الهاتف:</strong> <span style="direction: ltr; display: inline-block;">${displayPhone}</span></div>
+            <div><strong>العنوان:</strong> ${displayAddress}</div>
+            <div><strong>طريقة الدفع:</strong> ${paymentLabel} ${proofLink}</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 14px;">
+          <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text-muted);">المنتجات المطلوبة</h3>
+          ${itemsHtml}
+          <div style="display: flex; justify-content: space-between; padding-top: 12px; margin-top: 12px; font-weight: 700; font-size: 14px;">
+            <span>الشحن:</span>
+            <span>${Number(o.shipping_cost || 0).toLocaleString()} ج</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--border); font-weight: 800; font-size: 16px;">
+            <span>الإجمالي:</span>
+            <span>${Number(o.total_price || 0).toLocaleString()} ج</span>
+          </div>
+        </div>
+
+        ${currentOrdersFilter === 'pending' ? `
+          <button class="btn" style="width: 100%; margin-top: 20px; background: var(--accent);" onclick="markOrderReady(${o.id}, event)">تم التجهيز والشحن ✔</button>
+        ` : `
+          <div style="margin-top: 20px; text-align: center; color: var(--accent); font-weight: 800; background: #e8f5e9; padding: 14px; border-radius: 8px;">تم التجهيز والشحن</div>
+        `}
+      `;
+      modal.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    };
+
+    window.closeOrderModal = () => {
+      document.getElementById('orderModal').style.display = 'none';
+      document.body.style.overflow = '';
+    };
+
+    window.markOrderReady = async (orderId, event) => {
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = 'جاري التحديث...';
+      const { error } = await supabaseClient.from('orders').update({ status: 'ready' }).eq('id', orderId);
+      if (error) {
+        alert('تعذر تحديث حالة الطلب: ' + error.message);
+        btn.disabled = false;
+        btn.textContent = 'تم التجهيز والشحن ✔';
+        return;
+      }
+      const o = allOrders.find(x => x.id === orderId);
+      if (o) o.status = 'ready';
+      closeOrderModal();
+      renderOrders();
+    };
 
     async function uploadFile(file, bucket) {
       const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/^-+|-+$/g, '') || 'image';
