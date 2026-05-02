@@ -531,10 +531,43 @@
       data.forEach(o => {
         const div = document.createElement('div');
         div.className = 'card';
-        const paymentLabel = o.payment_method === 'ewallet' ? '📱 محفظة إلكترونية' : '💵 عند الاستلام';
-        const proofLink = o.proof_url ? `<a href="${escapeHtml(o.proof_url)}" target="_blank" style="color:#2d7a2d;font-size:12px;">📎 إثبات التحويل</a>` : '';
-        const items = Array.isArray(o.items) ? o.items.map(i => escapeHtml(i.name)).join('، ') : '';
-        div.innerHTML = `<div class="order-header"><span class="order-date">${new Date(o.created_at).toLocaleString('ar-EG')}</span><span class="order-status">${paymentLabel}</span></div><div class="order-info"><strong>${escapeHtml(o.customer_name || '')}</strong><p>${escapeHtml(o.phone || 'بدون رقم')} | ${escapeHtml(o.address || 'بدون عنوان')}</p>${items ? `<p style="font-size:12px;color:#555;margin-top:4px;">📦 ${items}</p>` : ''}${proofLink}</div><div class="order-total">${Number(o.total_price || 0).toLocaleString()} جنيه</div>`;
+        
+        const isEwallet = o.payment_method === 'ewallet';
+        const paymentLabel = isEwallet ? 'محفظة إلكترونية' : 'عند الاستلام';
+        const statusBg = isEwallet ? '#e3f2fd' : '#e8f5e9';
+        const statusColor = isEwallet ? '#1976d2' : '#2e7d32';
+        
+        const proofLink = o.proof_url ? `<a href="${escapeHtml(o.proof_url)}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; background: #f4f6f8; padding: 6px 12px; border-radius: 6px; color: #1976d2; font-size: 12px; font-weight: 600; text-decoration: none; border: 1px solid var(--border); width: fit-content; margin-top: 8px;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> عرض الإثبات</a>` : '';
+        
+        const itemsList = Array.isArray(o.items) ? o.items.map(i => escapeHtml(i.name)).join(' • ') : '';
+        const itemsHtml = itemsList ? `<div style="font-size: 13px; color: var(--text-muted); background: var(--field-bg); padding: 10px; border-radius: 6px; border: 1px solid #f0f1f2; margin-top: 4px;">${itemsList}</div>` : '';
+
+        // Handle variations in column names gracefully
+        const displayPhone = escapeHtml(o.customer_phone || o.phone || 'بدون رقم');
+        const displayAddress = escapeHtml(o.customer_address || o.address || 'بدون عنوان');
+        const displayName = escapeHtml(o.customer_name || 'عميل');
+
+        div.innerHTML = `
+          <div class="order-header">
+            <span class="order-date">${new Date(o.created_at).toLocaleString('ar-EG')}</span>
+            <span class="order-status" style="background: ${statusBg}; color: ${statusColor};">${paymentLabel}</span>
+          </div>
+          <div class="order-info">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <strong style="font-size: 15px; color: var(--primary);">${displayName}</strong>
+                <p style="margin-top: 4px;">${displayAddress}</p>
+                <p style="direction: ltr; text-align: right; font-weight: 500;">${displayPhone}</p>
+              </div>
+            </div>
+            ${itemsHtml}
+            ${proofLink}
+          </div>
+          <div class="order-total" style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">الإجمالي</span>
+            <span>${Number(o.total_price || 0).toLocaleString()} جنيه</span>
+          </div>
+        `;
         cont.appendChild(div);
       });
     }
