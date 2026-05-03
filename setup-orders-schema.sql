@@ -34,6 +34,12 @@ ON public.orders FOR SELECT
 TO anon, authenticated
 USING (true);
 
+CREATE POLICY "Anyone can update orders" 
+ON public.orders FOR UPDATE 
+TO anon, authenticated
+USING (true)
+WITH CHECK (true);
+
 -- Ensure proofs bucket exists and has correct policies
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('proofs', 'proofs', true)

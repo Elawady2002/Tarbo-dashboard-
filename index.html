@@ -791,11 +791,7 @@
       }[char]));
     }
 
-    function collectSizes() {
-      return Array.from(document.querySelectorAll('.size-value'))
-        .map(input => input.value.trim())
-        .filter(Boolean);
-    }
+
 
     function getProductImageUrls(product) {
       const urls = [];
