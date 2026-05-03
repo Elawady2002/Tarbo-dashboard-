@@ -1001,6 +1001,9 @@
             <div class="product-meta">${sizes.length ? `${sizes.length} مقاس` : 'بدون مقاسات'} | ${colors.length ? `${colors.length} لون` : 'بدون ألوان'}</div>
             <div class="product-actions" style="display:flex; gap:8px;">
               <button type="button" class="btn edit-product-btn" data-product-id="${escapeHtml(product.id)}" style="flex:1; background: #e8f0fe; color: #1967d2; font-weight: 700; border: none; padding: 10px; font-size: 13px; border-radius: 8px;">تعديل</button>
+              <button type="button" class="discount-product-btn" data-product-id="${escapeHtml(product.id)}" style="width: 40px; padding: 0; display: flex; align-items: center; justify-content: center; background: #fff3e0; color: #ef6c00; border: none; border-radius: 8px;" title="الخصومات والعروض">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+              </button>
               <button type="button" class="delete-product-btn" data-product-id="${escapeHtml(product.id)}" style="width: 40px; padding: 0; display: flex; align-items: center; justify-content: center; background: #fce8e6; color: var(--red); border: none; border-radius: 8px;" title="حذف">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               </button>
@@ -1009,6 +1012,7 @@
         `;
 
         card.querySelector('.edit-product-btn').addEventListener('click', () => editProduct(product));
+        card.querySelector('.discount-product-btn').addEventListener('click', () => openDiscountModal(product));
         card.querySelector('.delete-product-btn').addEventListener('click', () => deleteProduct(product));
         grid.appendChild(card);
       });
@@ -1482,7 +1486,120 @@
     checkProductDetailsSchema();
     fetchProducts();
     fetchHeroImages();
+    // (Note: `fetchOrders()` and `fetchGovernorates()` might be called elsewhere or implicitly)
+
+    // --- Discount Logic ---
+    window.openDiscountModal = (product) => {
+      document.getElementById('discountProductId').value = product.id;
+      document.getElementById('directDiscountInput').value = product.discount_percentage || '';
+      document.getElementById('couponCodeInput').value = '';
+      document.getElementById('couponPercentInput').value = '';
+      document.getElementById('discountModal').style.display = 'flex';
+    };
+
+    window.closeDiscountModal = () => {
+      document.getElementById('discountModal').style.display = 'none';
+    };
+
+    window.applyDirectDiscount = async () => {
+      const pid = document.getElementById('discountProductId').value;
+      const pct = parseInt(document.getElementById('directDiscountInput').value) || 0;
+      
+      const product = products.find(p => p.id == pid);
+      if (!product) return;
+      
+      let basePrice = product.old_price ? parseFloat(product.old_price) : parseFloat(product.price);
+      let newPrice = basePrice;
+      let oldPrice = null;
+      
+      if (pct > 0) {
+        newPrice = basePrice * (1 - (pct / 100));
+        oldPrice = basePrice;
+      }
+
+      const { error } = await supabaseClient.from('products').update({
+        discount_percentage: pct,
+        price: newPrice,
+        old_price: oldPrice
+      }).eq('id', pid);
+
+      if (!error) {
+        alert('تم تطبيق الخصم بنجاح!');
+        closeDiscountModal();
+        fetchProducts();
+      } else {
+        alert('حدث خطأ أثناء تطبيق الخصم.');
+      }
+    };
+
+    window.generateRandomCoupon = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = '';
+      for(let i=0; i<8; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+      document.getElementById('couponCodeInput').value = code;
+    };
+
+    window.createCoupon = async () => {
+      const pid = document.getElementById('discountProductId').value;
+      const code = document.getElementById('couponCodeInput').value.trim();
+      const pct = parseInt(document.getElementById('couponPercentInput').value) || 0;
+
+      if (!code || pct <= 0) {
+        alert('الرجاء إدخال كود صحيح ونسبة خصم.');
+        return;
+      }
+
+      const { error } = await supabaseClient.from('coupons').insert([{
+        code: code,
+        discount_percentage: pct,
+        product_id: pid,
+        is_active: true
+      }]);
+
+      if (!error) {
+        alert('تم إنشاء الكوبون بنجاح!');
+        document.getElementById('couponCodeInput').value = '';
+        document.getElementById('couponPercentInput').value = '';
+      } else {
+        alert('حدث خطأ أثناء إنشاء الكوبون (ربما الكود مكرر).');
+      }
     };
   </script>
+
+<!-- DISCOUNT MODAL -->
+<div id="discountModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:#fff; width:90%; max-width:400px; border-radius:16px; padding:24px; box-shadow:0 10px 40px rgba(0,0,0,0.1);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h3 style="margin:0; font-size:18px; font-weight:800;">إدارة الخصومات</h3>
+      <button onclick="closeDiscountModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#888;">&times;</button>
+    </div>
+    
+    <input type="hidden" id="discountProductId" />
+    
+    <div style="margin-bottom:20px;">
+      <label style="display:block; font-size:13px; font-weight:700; color:#555; margin-bottom:8px;">1. خصم مباشر على المنتج (%)</label>
+      <div style="display:flex; gap:8px;">
+        <input type="number" id="directDiscountInput" min="0" max="100" placeholder="مثال: 50" style="flex:1; padding:10px; border:1px solid #e0e0e0; border-radius:8px; font-size:14px; text-align:left;" dir="ltr" />
+        <button onclick="applyDirectDiscount()" style="background:#111; color:#fff; border:none; border-radius:8px; padding:0 16px; font-weight:700; cursor:pointer;">تطبيق</button>
+      </div>
+      <p style="font-size:11px; color:#888; margin-top:6px;">سيتغير سعر المنتج في المتجر فوراً وسيعرض السعر القديم مشطوباً.</p>
+    </div>
+
+    <hr style="border:none; border-top:1px solid #f0f0f0; margin:20px 0;" />
+
+    <div>
+      <label style="display:block; font-size:13px; font-weight:700; color:#555; margin-bottom:8px;">2. إنشاء كوبون خصم (للمنتج)</label>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+        <input type="text" id="couponCodeInput" placeholder="كود الكوبون" style="padding:10px; border:1px solid #e0e0e0; border-radius:8px; font-size:14px; text-transform:uppercase;" />
+        <input type="number" id="couponPercentInput" placeholder="النسبة (%)" min="1" max="100" style="padding:10px; border:1px solid #e0e0e0; border-radius:8px; font-size:14px; text-align:left;" dir="ltr" />
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button onclick="generateRandomCoupon()" style="flex:1; background:#f5f5f5; color:#333; border:1px solid #e0e0e0; border-radius:8px; padding:8px; font-weight:700; cursor:pointer; font-size:12px;">توليد عشوائي</button>
+        <button onclick="createCoupon()" style="flex:2; background:#1967d2; color:#fff; border:none; border-radius:8px; padding:8px; font-weight:700; cursor:pointer; font-size:13px;">حفظ الكوبون</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
