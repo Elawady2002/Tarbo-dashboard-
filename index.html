@@ -146,7 +146,29 @@
     .section-label span { font-size: 11px; font-weight: 800; color: var(--text-muted); }
     .swatch-line { display: grid; grid-template-columns: 84px 1fr; gap: 14px; align-items: start; }
     .color-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .size-line { display: flex; gap: 10px; align-items: center; width: 100%; }
+    .size-tags-container {
+      display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 12px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--field-bg); min-height: 48px; align-items: center;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .size-tags-container:focus-within { border-color: var(--primary); background: #fff; }
+    .size-tag {
+      position: relative; display: flex; align-items: center; justify-content: center;
+      min-width: 44px; height: 44px; padding: 0 10px; background: #fff;
+      border: 1px solid var(--border-strong); border-radius: 8px;
+      font-size: 14px; font-weight: 700; color: var(--primary); text-transform: uppercase;
+    }
+    .size-tag .remove-tag-btn {
+      position: absolute; top: -6px; right: -6px; background: var(--red); color: #fff;
+      border: none; border-radius: 50%; width: 18px; height: 18px;
+      font-size: 10px; font-weight: bold; display: flex; align-items: center;
+      justify-content: center; cursor: pointer; z-index: 2;
+    }
+    #sizeInput {
+      flex: 1; min-width: 140px; border: none; background: transparent;
+      outline: none; font-size: 14px; color: var(--primary); font-family: inherit;
+    }
     .actions { display: grid; gap: 10px; margin-top: 4px; }
     .btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 15px 14px; border-radius: 8px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.16s, opacity 0.16s, background 0.16s; }
     .btn:active { transform: translateY(1px); }
@@ -353,36 +375,36 @@
             <div class="form-group"><label>السعر</label><input type="number" id="prodPrice" required /></div>
             <div class="form-group"><label>المخزون</label><input type="number" id="prodStock" required /></div>
           </div>
-          <div id="sizesContainer">
-            <div class="size-section">
-              <div class="size-line">
-                <div class="form-group" style="flex:1;"><input type="text" class="size-value" required placeholder="المقاس (مثال: S, M, L)" /></div>
-                <button type="button" class="inline-remove" onclick="removeSizeSection(this)" style="display:none;" title="حذف">
-                  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-              </div>
+          <div class="form-group">
+            <label>المقاسات</label>
+            <div class="size-tags-container" id="sizesTagsContainer">
+              <input type="text" id="sizeInput" placeholder="اكتب المقاس واضغط Enter (مثال: S, M, XL)" onkeydown="if(event.key === 'Enter' || event.key === ','){ event.preventDefault(); if(this.value.trim()) { window.addSizeTag(this.value.trim().toUpperCase()); this.value=''; } }" />
             </div>
           </div>
-          <div id="colorsContainer">
-            <div class="color-section">
-              <div class="swatch-line">
-                <div class="form-group" style="grid-column: 1 / -1; display: flex; align-items: center; gap: 12px;">
-                  <input type="color" class="color-code" value="#000000" title="اختر اللون" />
-                  <span style="font-size: 14px; font-weight: 700; flex: 1;">لون المنتج</span>
-                  <button type="button" class="inline-remove" onclick="this.closest('.color-section').remove()" style="display:none;" title="حذف">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                  </button>
+          <div id="colorsWrapper">
+            <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px; margin-top: 12px;">
+              <label style="margin:0;">الألوان والصور</label>
+              <button type="button" class="mini-btn" onclick="addColorSection()" style="border-color: var(--primary); color: var(--primary); font-size: 12px; padding: 6px 12px;">+ لون إضافي</button>
+            </div>
+            <div id="colorsContainer">
+              <div class="color-section">
+                <div class="swatch-line">
+                  <div class="form-group" style="grid-column: 1 / -1; display: flex; align-items: center; gap: 12px;">
+                    <input type="color" class="color-code" value="#000000" title="اختر اللون" />
+                    <span style="font-size: 14px; font-weight: 700; flex: 1;">لون المنتج</span>
+                    <button type="button" class="inline-remove" onclick="this.closest('.color-section').remove()" style="display:none;" title="حذف">
+                      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="color-row">
+                  <div class="form-group"><label>الصور (الأمام)</label><label class="custom-file-upload"><input type="file" class="color-front-images" multiple accept="image/*" onchange="previewImages(this, 'front-0')" /><span>اختر الصور</span></label><div class="image-preview-container" id="preview-front-0"></div></div>
+                  <div class="form-group"><label>الصور (الخلف)</label><label class="custom-file-upload"><input type="file" class="color-back-images" multiple accept="image/*" onchange="previewImages(this, 'back-0')" /><span>اختر الصور</span></label><div class="image-preview-container" id="preview-back-0"></div></div>
                 </div>
               </div>
-              <div class="color-row">
-                <div class="form-group"><label>الصور (الأمام)</label><label class="custom-file-upload"><input type="file" class="color-front-images" multiple accept="image/*" onchange="previewImages(this, 'front-0')" /><span>اختر الصور</span></label><div class="image-preview-container" id="preview-front-0"></div></div>
-                <div class="form-group"><label>الصور (الخلف)</label><label class="custom-file-upload"><input type="file" class="color-back-images" multiple accept="image/*" onchange="previewImages(this, 'back-0')" /><span>اختر الصور</span></label><div class="image-preview-container" id="preview-back-0"></div></div>
-              </div>
             </div>
           </div>
-          <div class="actions">
-            <button type="button" class="btn btn-secondary" onclick="addSizeSection()">+ مقاس آخر</button>
-            <button type="button" class="btn btn-secondary" onclick="addColorSection()">+ لون آخر</button>
+          <div class="actions" style="margin-top: 16px;">
             <button type="submit" class="btn" id="submitProductBtn">حفظ المنتج</button>
           </div>
         </form>
@@ -510,19 +532,19 @@
       container.appendChild(div);
     };
 
-    window.addSizeSection = () => {
-      const container = document.getElementById('sizesContainer');
-      const div = document.createElement('div');
-      div.className = 'size-section';
-      div.innerHTML = `<div class="size-line"><div class="form-group" style="flex:1;"><input type="text" class="size-value" required placeholder="المقاس (مثال: S, M, L)" /></div><button type="button" class="inline-remove" onclick="removeSizeSection(this)" title="حذف"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>`;
-      container.appendChild(div);
-      div.querySelector('.size-value').focus();
+    window.addSizeTag = (val) => {
+      const container = document.getElementById('sizesTagsContainer');
+      const input = document.getElementById('sizeInput');
+      const tag = document.createElement('div');
+      tag.className = 'size-tag';
+      tag.dataset.value = val;
+      tag.innerHTML = `<span>${escapeHtml(val)}</span><button type="button" class="remove-tag-btn" onclick="this.parentElement.remove()" title="حذف">X</button>`;
+      container.insertBefore(tag, input);
     };
 
-    window.removeSizeSection = (button) => {
-      const sections = document.querySelectorAll('.size-section');
-      if (sections.length <= 1) return;
-      button.closest('.size-section').remove();
+    window.collectSizes = () => {
+      const tags = document.querySelectorAll('.size-tag');
+      return Array.from(tags).map(t => t.dataset.value);
     };
 
     window.previewImages = (input, idx) => {
@@ -833,9 +855,7 @@
       document.querySelector('#addProductTab .page-title h2').textContent = 'إضافة منتج';
       document.getElementById('submitProductBtn').textContent = 'حفظ المنتج';
       document.getElementById('addProductForm').reset();
-      document.querySelectorAll('.size-section').forEach((section, index) => {
-        if (index > 0) section.remove();
-      });
+      document.querySelectorAll('.size-tag').forEach(t => t.remove());
       document.querySelectorAll('.color-section').forEach((section, index) => {
         if (index > 0) section.remove();
       });
@@ -1008,16 +1028,9 @@
       document.getElementById('prodPrice').value = product.price || '';
       document.getElementById('prodStock').value = product.stock || '';
       
-      const sizesCont = document.getElementById('sizesContainer');
-      sizesCont.innerHTML = '';
+      document.querySelectorAll('.size-tag').forEach(t => t.remove());
       if (Array.isArray(product.sizes) && product.sizes.length > 0) {
-        product.sizes.forEach((s, i) => {
-          window.addSizeSection();
-          const inputs = sizesCont.querySelectorAll('.size-value');
-          if (inputs.length > 0) inputs[inputs.length - 1].value = s;
-        });
-      } else {
-        window.addSizeSection();
+        product.sizes.forEach((s) => window.addSizeTag(s));
       }
       
       const colorsCont = document.getElementById('colorsContainer');
