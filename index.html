@@ -97,23 +97,24 @@
       box-shadow: 0 0 0 3px rgba(17,17,17,0.06);
     }
     input[type="color"] { height: 44px; padding: 5px; cursor: pointer; }
-    input[type="file"] {
+    input[type="file"] { display: none; }
+    .custom-file-upload {
+      position: relative;
       display: flex;
       align-items: center;
-      min-height: 48px;
-      padding: 8px;
+      justify-content: center;
+      min-height: 44px;
+      padding: 10px;
+      background: var(--field-bg);
+      border: 1px dashed var(--border-strong);
+      border-radius: 8px;
       cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
     }
-    input[type="file"]::file-selector-button {
-      border: 1px solid var(--border-strong);
-      border-radius: 7px;
-      background: #fff;
-      color: var(--primary);
-      padding: 8px 10px;
-      margin-left: 10px;
-      font-family: inherit;
-      font-weight: 600;
-      cursor: pointer;
+    .custom-file-upload:hover { background: #fff; border-color: var(--primary); }
+    .custom-file-upload span {
+      font-size: 12px; font-weight: 700; color: var(--text-muted); pointer-events: none;
     }
     .color-section,
     .size-section {
@@ -127,7 +128,8 @@
     }
     .section-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
     .section-label span { font-size: 11px; font-weight: 800; color: var(--text-muted); }
-    .swatch-line { display: grid; grid-template-columns: 84px 1fr; gap: 10px; align-items: end; }
+    .swatch-line { display: grid; grid-template-columns: 84px 1fr; gap: 14px; align-items: start; }
+    .color-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
     .size-line { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
     .actions { display: grid; gap: 10px; margin-top: 4px; }
     .btn { width: 100%; background: var(--primary); color: #fff; border: none; padding: 15px 14px; border-radius: 8px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.16s, opacity 0.16s, background 0.16s; }
@@ -159,6 +161,10 @@
     .image-preview-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .image-preview { width: 68px; height: 68px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border); background: var(--field-bg); }
     .hero-preview .image-preview { width: 92px; height: 92px; }
+    .existing-image-wrapper { position: relative; display: inline-block; }
+    .existing-image-wrapper .remove-img-btn {
+      position: absolute; top: -6px; right: -6px; background: var(--red); color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2;
+    }
     .hero-list { display: grid; gap: 10px; }
     .hero-list-title { margin-bottom: 12px; font-size: 14px; font-weight: 800; color: var(--primary); }
     .hero-item {
@@ -329,10 +335,12 @@
           <div id="colorsContainer">
             <div class="color-section">
               <div class="section-label"><span>لون المنتج</span></div>
-              <div class="swatch-line" style="grid-template-columns: 84px 1fr 1fr;">
-                <div class="form-group"><label>اللون</label><input type="color" class="color-code" value="#000000" /></div>
-                <div class="form-group"><label>الصور (الأمام)</label><input type="file" class="color-front-images" multiple accept="image/*" onchange="previewImages(this, 'front-0')" /><div class="image-preview-container" id="preview-front-0"></div></div>
-                <div class="form-group"><label>الصور (الخلف)</label><input type="file" class="color-back-images" multiple accept="image/*" onchange="previewImages(this, 'back-0')" /><div class="image-preview-container" id="preview-back-0"></div></div>
+              <div class="swatch-line">
+                <div class="form-group" style="grid-column: 1 / -1;"><label>اللون</label><input type="color" class="color-code" value="#000000" /></div>
+              </div>
+              <div class="color-row">
+                <div class="form-group"><label>الصور (الأمام)</label><label class="custom-file-upload"><input type="file" class="color-front-images" multiple accept="image/*" onchange="previewImages(this, 'front-0')" /><span>اختر الصور</span></label><div class="image-preview-container" id="preview-front-0"></div></div>
+                <div class="form-group"><label>الصور (الخلف)</label><label class="custom-file-upload"><input type="file" class="color-back-images" multiple accept="image/*" onchange="previewImages(this, 'back-0')" /><span>اختر الصور</span></label><div class="image-preview-container" id="preview-back-0"></div></div>
               </div>
             </div>
           </div>
@@ -352,7 +360,7 @@
       </div>
       <div class="card">
         <form id="heroForm" class="upload-panel">
-          <div class="form-group"><label>صور الواجهة</label><input type="file" id="heroImagesInput" multiple accept="image/*" onchange="previewHeroImages(this)" /></div>
+          <div class="form-group"><label>صور الواجهة</label><label class="custom-file-upload"><input type="file" id="heroImagesInput" multiple accept="image/*" onchange="previewHeroImages(this)" /><span>اختر الصور</span></label></div>
           <div class="image-preview-container hero-preview" id="selectedHeroPreview"></div>
           <button type="submit" class="btn" id="submitHeroBtn">رفع الصور</button>
         </form>
@@ -462,7 +470,7 @@
       const idx = document.querySelectorAll('.color-section').length;
       const div = document.createElement('div');
       div.className = 'color-section';
-      div.innerHTML = `<div class="section-label"><span>لون ${idx + 1}</span></div><div class="swatch-line" style="grid-template-columns: 84px 1fr 1fr;"><div class="form-group"><label>اللون</label><input type="color" class="color-code" value="#ffffff" /></div><div class="form-group"><label>الصور (الأمام)</label><input type="file" class="color-front-images" multiple accept="image/*" onchange="previewImages(this, 'front-${idx}')" /><div class="image-preview-container" id="preview-front-${idx}"></div></div><div class="form-group"><label>الصور (الخلف)</label><input type="file" class="color-back-images" multiple accept="image/*" onchange="previewImages(this, 'back-${idx}')" /><div class="image-preview-container" id="preview-back-${idx}"></div></div></div>`;
+      div.innerHTML = `<div class="section-label"><span>لون ${idx + 1}</span><button type="button" class="inline-remove" onclick="this.closest('.color-section').remove()">حذف</button></div><div class="swatch-line"><div class="form-group" style="grid-column: 1 / -1;"><label>اللون</label><input type="color" class="color-code" value="#ffffff" /></div></div><div class="color-row"><div class="form-group"><label>الصور (الأمام)</label><label class="custom-file-upload"><input type="file" class="color-front-images" multiple accept="image/*" onchange="previewImages(this, 'front-${idx}')" /><span>اختر الصور</span></label><div class="image-preview-container" id="preview-front-${idx}"></div></div><div class="form-group"><label>الصور (الخلف)</label><label class="custom-file-upload"><input type="file" class="color-back-images" multiple accept="image/*" onchange="previewImages(this, 'back-${idx}')" /><span>اختر الصور</span></label><div class="image-preview-container" id="preview-back-${idx}"></div></div></div>`;
       container.appendChild(div);
     };
 
@@ -504,6 +512,7 @@
     let heroSchemaReady = false;
     let productDetailsSchemaReady = false;
     let products = [];
+    let editingProductId = null;
     let heroDragIndex = null;
     let heroPointerDrag = null;
 
@@ -788,6 +797,9 @@
     }
 
     function resetProductForm() {
+      editingProductId = null;
+      document.querySelector('#addProductTab .page-title h2').textContent = 'إضافة منتج';
+      document.getElementById('submitProductBtn').textContent = 'حفظ المنتج';
       document.getElementById('addProductForm').reset();
       document.querySelectorAll('.size-section').forEach((section, index) => {
         if (index > 0) section.remove();
@@ -818,23 +830,29 @@
           const code = s.querySelector('.color-code').value;
           const frontFiles = s.querySelector('.color-front-images').files;
           const backFiles = s.querySelector('.color-back-images').files;
-          const frontUrls = [];
-          const backUrls = [];
-          const allUrls = [];
+          
+          const existingFrontUrls = Array.from(s.querySelectorAll('.existing-front-img')).map(img => img.dataset.url);
+          const existingBackUrls = Array.from(s.querySelectorAll('.existing-back-img')).map(img => img.dataset.url);
+
+          const frontUrls = [...existingFrontUrls];
+          const backUrls = [...existingBackUrls];
+          const allUrls = [...existingFrontUrls, ...existingBackUrls];
+
           for (const f of frontFiles) {
             const uploaded = await uploadFile(f, productsBucket);
             uploadedPaths.push(uploaded.path);
             frontUrls.push(uploaded.publicUrl);
             allUrls.push(uploaded.publicUrl);
-            if (!mainImageUrl) mainImageUrl = uploaded.publicUrl;
           }
           for (const f of backFiles) {
             const uploaded = await uploadFile(f, productsBucket);
             uploadedPaths.push(uploaded.path);
             backUrls.push(uploaded.publicUrl);
             allUrls.push(uploaded.publicUrl);
-            if (!mainImageUrl) mainImageUrl = uploaded.publicUrl;
           }
+          
+          if (!mainImageUrl && allUrls.length > 0) mainImageUrl = allUrls[0];
+          
           colors.push({ color: code, images: allUrls, frontImages: frontUrls, backImages: backUrls });
         }
 
@@ -858,10 +876,16 @@
           productRow.colors = colors;
         }
 
-        const { error } = await supabaseClient.from('products').insert([productRow]);
-        if (error) throw new Error(`تعذر حفظ المنتج في الداتا بيز: ${error.message}`);
-
-        alert('تم الحفظ');
+        if (editingProductId) {
+          const { error } = await supabaseClient.from('products').update(productRow).eq('id', editingProductId);
+          if (error) throw new Error(`تعذر تحديث المنتج في الداتا بيز: ${error.message}`);
+          alert('تم التحديث بنجاح');
+        } else {
+          const { error } = await supabaseClient.from('products').insert([productRow]);
+          if (error) throw new Error(`تعذر حفظ المنتج في الداتا بيز: ${error.message}`);
+          alert('تم الحفظ');
+        }
+        
         resetProductForm();
         fetchProducts();
       } catch (err) {
@@ -928,16 +952,75 @@
               ${product.old_price ? `<span class="price-reg">LE ${Number(product.old_price).toLocaleString()}.00</span>` : ''}
             </div>
             <div class="product-meta">${sizes.length ? `${sizes.length} مقاس` : 'بدون مقاسات'} | ${colors.length ? `${colors.length} لون` : 'بدون ألوان'}</div>
-            <div class="product-actions">
-              <button type="button" class="delete-product-btn" data-product-id="${escapeHtml(product.id)}">حذف المنتج</button>
+            <div class="product-actions" style="display:flex; gap:8px;">
+              <button type="button" class="btn btn-secondary edit-product-btn" data-product-id="${escapeHtml(product.id)}" style="padding:8px; font-size:12px;">تعديل</button>
+              <button type="button" class="delete-product-btn" data-product-id="${escapeHtml(product.id)}" style="padding:8px; font-size:12px; flex:1;">حذف المنتج</button>
             </div>
           </div>
         `;
 
+        card.querySelector('.edit-product-btn').addEventListener('click', () => editProduct(product));
         card.querySelector('.delete-product-btn').addEventListener('click', () => deleteProduct(product));
         grid.appendChild(card);
       });
     }
+
+    window.editProduct = (product) => {
+      editingProductId = product.id;
+      document.querySelector('#addProductTab .page-title h2').textContent = 'تعديل منتج';
+      document.getElementById('submitProductBtn').textContent = 'تحديث المنتج';
+      
+      document.getElementById('prodName').value = product.name || '';
+      document.getElementById('prodDesc').value = product.description || '';
+      document.getElementById('prodPrice').value = product.price || '';
+      document.getElementById('prodStock').value = product.stock || '';
+      
+      const sizesCont = document.getElementById('sizesContainer');
+      sizesCont.innerHTML = '';
+      if (Array.isArray(product.sizes) && product.sizes.length > 0) {
+        product.sizes.forEach((s, i) => {
+          window.addSizeSection();
+          const inputs = sizesCont.querySelectorAll('.size-value');
+          if (inputs.length > 0) inputs[inputs.length - 1].value = s;
+        });
+      } else {
+        window.addSizeSection();
+      }
+      
+      const colorsCont = document.getElementById('colorsContainer');
+      colorsCont.innerHTML = '';
+      if (Array.isArray(product.colors) && product.colors.length > 0) {
+        product.colors.forEach((c, i) => {
+          window.addColorSection();
+          const sections = colorsCont.querySelectorAll('.color-section');
+          const sec = sections[sections.length - 1];
+          sec.querySelector('.color-code').value = c.color;
+          
+          if (Array.isArray(c.frontImages)) {
+            const previewF = sec.querySelector('[id^="preview-front-"]');
+            c.frontImages.forEach(url => {
+              previewF.innerHTML += `<div class="existing-image-wrapper"><button type="button" class="remove-img-btn" onclick="this.parentElement.remove()">X</button><img src="${escapeHtml(url)}" data-url="${escapeHtml(url)}" class="image-preview existing-front-img" /></div>`;
+            });
+          }
+          if (Array.isArray(c.backImages)) {
+            const previewB = sec.querySelector('[id^="preview-back-"]');
+            c.backImages.forEach(url => {
+              previewB.innerHTML += `<div class="existing-image-wrapper"><button type="button" class="remove-img-btn" onclick="this.parentElement.remove()">X</button><img src="${escapeHtml(url)}" data-url="${escapeHtml(url)}" class="image-preview existing-back-img" /></div>`;
+            });
+          }
+          if (Array.isArray(c.images) && !c.frontImages && !c.backImages) {
+             const previewF = sec.querySelector('[id^="preview-front-"]');
+             c.images.forEach(url => {
+               previewF.innerHTML += `<div class="existing-image-wrapper"><button type="button" class="remove-img-btn" onclick="this.parentElement.remove()">X</button><img src="${escapeHtml(url)}" data-url="${escapeHtml(url)}" class="image-preview existing-front-img" /></div>`;
+             });
+          }
+        });
+      } else {
+        window.addColorSection();
+      }
+      
+      switchTab('addProductTab', document.querySelectorAll('.nav-item')[2]);
+    };
 
     async function deleteProduct(product) {
       if (!confirm(`هل تريد حذف "${product.name || 'هذا المنتج'}"؟`)) return;
