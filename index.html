@@ -1482,12 +1482,6 @@
       alert('تم حفظ الرقم بنجاح');
     };
 
-    checkAuth();
-    checkProductDetailsSchema();
-    fetchProducts();
-    fetchHeroImages();
-    // (Note: `fetchOrders()` and `fetchGovernorates()` might be called elsewhere or implicitly)
-
     // --- Discount Logic ---
     window.openDiscountModal = (product) => {
       document.getElementById('discountProductId').value = product.id;
@@ -1564,6 +1558,12 @@
         alert('حدث خطأ أثناء إنشاء الكوبون (ربما الكود مكرر).');
       }
     };
+
+    checkAuth();
+    checkProductDetailsSchema();
+    fetchProducts();
+    fetchHeroImages();
+  };
   </script>
 
 <!-- DISCOUNT MODAL -->
