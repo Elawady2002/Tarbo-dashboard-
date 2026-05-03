@@ -1488,11 +1488,13 @@
       document.getElementById('directDiscountInput').value = product.discount_percentage || '';
       document.getElementById('couponCodeInput').value = '';
       document.getElementById('couponPercentInput').value = '';
-      document.getElementById('discountModal').style.display = 'flex';
+      document.getElementById('discountOverlay').classList.add('open');
+      document.getElementById('discountDrawer').classList.add('open');
     };
 
     window.closeDiscountModal = () => {
-      document.getElementById('discountModal').style.display = 'none';
+      document.getElementById('discountOverlay').classList.remove('open');
+      document.getElementById('discountDrawer').classList.remove('open');
     };
 
     window.applyDirectDiscount = async () => {
@@ -1566,40 +1568,191 @@
   };
   </script>
 
-<!-- DISCOUNT MODAL -->
-<div id="discountModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:#fff; width:90%; max-width:400px; border-radius:16px; padding:24px; box-shadow:0 10px 40px rgba(0,0,0,0.1);">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-      <h3 style="margin:0; font-size:18px; font-weight:800;">إدارة الخصومات</h3>
-      <button onclick="closeDiscountModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#888;">&times;</button>
-    </div>
-    
-    <input type="hidden" id="discountProductId" />
-    
-    <div style="margin-bottom:20px;">
-      <label style="display:block; font-size:13px; font-weight:700; color:#555; margin-bottom:8px;">1. خصم مباشر على المنتج (%)</label>
-      <div style="display:flex; gap:8px;">
-        <input type="number" id="directDiscountInput" min="0" max="100" placeholder="مثال: 50" style="flex:1; padding:10px; border:1px solid #e0e0e0; border-radius:8px; font-size:14px; text-align:left;" dir="ltr" />
-        <button onclick="applyDirectDiscount()" style="background:#111; color:#fff; border:none; border-radius:8px; padding:0 16px; font-weight:700; cursor:pointer;">تطبيق</button>
+<!-- DISCOUNT BOTTOM DRAWER -->
+<style>
+  #discountOverlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 9000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+  }
+  #discountOverlay.open { opacity: 1; pointer-events: all; }
+
+  #discountDrawer {
+    position: fixed;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%) translateY(100%);
+    width: 100%;
+    max-width: 600px;
+    background: var(--card-bg);
+    border-radius: 20px 20px 0 0;
+    padding: 0 0 40px 0;
+    z-index: 9001;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.12);
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    overflow-y: auto;
+    max-height: 90vh;
+  }
+  #discountDrawer.open { transform: translateX(-50%) translateY(0); }
+
+  .drawer-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 12px auto 0;
+  }
+  .drawer-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .drawer-header h3 {
+    font-size: 16px; font-weight: 800; color: var(--primary);
+    letter-spacing: -0.01em;
+  }
+  .drawer-close-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: none; background: var(--field-bg);
+    color: var(--text-muted); font-size: 18px;
+    display: grid; place-items: center; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .drawer-close-btn:active { background: var(--border); }
+
+  .drawer-body { padding: 20px; display: grid; gap: 20px; }
+
+  .drawer-section {
+    background: var(--field-bg);
+    border: 1px solid #eef0f2;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .drawer-section-label {
+    font-size: 11px; font-weight: 800; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+  }
+  .drawer-section-label .label-badge {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    font-size: 11px; font-weight: 800;
+    display: grid; place-items: center;
+  }
+  .drawer-input-row { display: flex; gap: 10px; align-items: center; }
+  .drawer-input-row input {
+    flex: 1; height: 46px;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit; font-size: 15px;
+    color: var(--primary); background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .drawer-input-row input:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(17,17,17,0.06);
+  }
+  .drawer-apply-btn {
+    height: 46px; padding: 0 18px;
+    background: var(--primary); color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 800; cursor: pointer;
+    white-space: nowrap; transition: opacity 0.15s;
+  }
+  .drawer-apply-btn:active { opacity: 0.8; }
+  .drawer-hint {
+    font-size: 12px; color: var(--text-muted);
+    line-height: 1.5; margin-top: 10px;
+  }
+
+  .coupon-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;
+  }
+  .coupon-grid input {
+    height: 46px; padding: 0 14px;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-family: inherit; font-size: 15px;
+    color: var(--primary); background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    text-transform: uppercase;
+  }
+  .coupon-grid input:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(17,17,17,0.06);
+  }
+  .coupon-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; }
+  .btn-ghost {
+    height: 46px; background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px; font-size: 13px;
+    font-weight: 700; color: var(--text);
+    cursor: pointer; transition: background 0.15s;
+  }
+  .btn-ghost:active { background: var(--field-bg); }
+  .btn-save-coupon {
+    height: 46px; background: #1967d2; color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 800; cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn-save-coupon:active { opacity: 0.8; }
+</style>
+
+<div id="discountOverlay" onclick="closeDiscountModal()"></div>
+
+<div id="discountDrawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-header">
+    <h3>إدارة الخصومات</h3>
+    <button class="drawer-close-btn" onclick="closeDiscountModal()">×</button>
+  </div>
+
+  <input type="hidden" id="discountProductId" />
+
+  <div class="drawer-body">
+
+    <!-- Section 1: Direct Discount -->
+    <div class="drawer-section">
+      <div class="drawer-section-label">
+        <span class="label-badge">١</span>
+        خصم مباشر على المنتج
       </div>
-      <p style="font-size:11px; color:#888; margin-top:6px;">سيتغير سعر المنتج في المتجر فوراً وسيعرض السعر القديم مشطوباً.</p>
+      <div class="drawer-input-row">
+        <input type="number" id="directDiscountInput" min="0" max="100"
+          placeholder="النسبة مثلاً: 30" dir="ltr" />
+        <button class="drawer-apply-btn" onclick="applyDirectDiscount()">تطبيق</button>
+      </div>
+      <p class="drawer-hint">سيتغير السعر في المتجر فوراً وسيظهر السعر القديم مشطوباً بجانبه.</p>
     </div>
 
-    <hr style="border:none; border-top:1px solid #f0f0f0; margin:20px 0;" />
+    <!-- Divider -->
+    <div style="display:flex;align-items:center;gap:12px;color:var(--text-muted);font-size:11px;font-weight:700;">
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+      أو
+      <div style="flex:1;height:1px;background:var(--border);"></div>
+    </div>
 
-    <div>
-      <label style="display:block; font-size:13px; font-weight:700; color:#555; margin-bottom:8px;">2. إنشاء كوبون خصم (للمنتج)</label>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
-        <input type="text" id="couponCodeInput" placeholder="كود الكوبون" style="padding:10px; border:1px solid #e0e0e0; border-radius:8px; font-size:14px; text-transform:uppercase;" />
-        <input type="number" id="couponPercentInput" placeholder="النسبة (%)" min="1" max="100" style="padding:10px; border:1px solid #e0e0e0; border-radius:8px; font-size:14px; text-align:left;" dir="ltr" />
+    <!-- Section 2: Coupon -->
+    <div class="drawer-section">
+      <div class="drawer-section-label">
+        <span class="label-badge">٢</span>
+        إنشاء كوبون خصم
       </div>
-      <div style="display:flex; gap:8px;">
-        <button onclick="generateRandomCoupon()" style="flex:1; background:#f5f5f5; color:#333; border:1px solid #e0e0e0; border-radius:8px; padding:8px; font-weight:700; cursor:pointer; font-size:12px;">توليد عشوائي</button>
-        <button onclick="createCoupon()" style="flex:2; background:#1967d2; color:#fff; border:none; border-radius:8px; padding:8px; font-weight:700; cursor:pointer; font-size:13px;">حفظ الكوبون</button>
+      <div class="coupon-grid">
+        <input type="text" id="couponCodeInput" placeholder="كود الكوبون" />
+        <input type="number" id="couponPercentInput" placeholder="النسبة (%)" min="1" max="100" dir="ltr" />
+      </div>
+      <div class="coupon-actions">
+        <button class="btn-ghost" onclick="generateRandomCoupon()">توليد عشوائي</button>
+        <button class="btn-save-coupon" onclick="createCoupon()">حفظ الكوبون</button>
       </div>
     </div>
+
   </div>
 </div>
 
 </body>
 </html>
+
