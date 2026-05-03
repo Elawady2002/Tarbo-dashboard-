@@ -329,9 +329,10 @@
           <div id="colorsContainer">
             <div class="color-section">
               <div class="section-label"><span>لون المنتج</span></div>
-              <div class="swatch-line">
+              <div class="swatch-line" style="grid-template-columns: 84px 1fr 1fr;">
                 <div class="form-group"><label>اللون</label><input type="color" class="color-code" value="#000000" /></div>
-                <div class="form-group"><label>الصور</label><input type="file" class="color-images" multiple accept="image/*" onchange="previewImages(this, 0)" /><div class="image-preview-container" id="preview-0"></div></div>
+                <div class="form-group"><label>الصور (الأمام)</label><input type="file" class="color-front-images" multiple accept="image/*" onchange="previewImages(this, 'front-0')" /><div class="image-preview-container" id="preview-front-0"></div></div>
+                <div class="form-group"><label>الصور (الخلف)</label><input type="file" class="color-back-images" multiple accept="image/*" onchange="previewImages(this, 'back-0')" /><div class="image-preview-container" id="preview-back-0"></div></div>
               </div>
             </div>
           </div>
@@ -461,7 +462,7 @@
       const idx = document.querySelectorAll('.color-section').length;
       const div = document.createElement('div');
       div.className = 'color-section';
-      div.innerHTML = `<div class="section-label"><span>لون ${idx + 1}</span></div><div class="swatch-line"><div class="form-group"><label>اللون</label><input type="color" class="color-code" value="#ffffff" /></div><div class="form-group"><label>الصور</label><input type="file" class="color-images" multiple accept="image/*" onchange="previewImages(this, ${idx})" /><div class="image-preview-container" id="preview-${idx}"></div></div></div>`;
+      div.innerHTML = `<div class="section-label"><span>لون ${idx + 1}</span></div><div class="swatch-line" style="grid-template-columns: 84px 1fr 1fr;"><div class="form-group"><label>اللون</label><input type="color" class="color-code" value="#ffffff" /></div><div class="form-group"><label>الصور (الأمام)</label><input type="file" class="color-front-images" multiple accept="image/*" onchange="previewImages(this, 'front-${idx}')" /><div class="image-preview-container" id="preview-front-${idx}"></div></div><div class="form-group"><label>الصور (الخلف)</label><input type="file" class="color-back-images" multiple accept="image/*" onchange="previewImages(this, 'back-${idx}')" /><div class="image-preview-container" id="preview-back-${idx}"></div></div></div>`;
       container.appendChild(div);
     };
 
@@ -738,10 +739,21 @@
       if (product.image_url) urls.push(product.image_url);
       if (Array.isArray(product.colors)) {
         product.colors.forEach(color => {
-          if (!Array.isArray(color.images)) return;
-          color.images.forEach(url => {
-            if (url && !urls.includes(url)) urls.push(url);
-          });
+          if (Array.isArray(color.images)) {
+            color.images.forEach(url => {
+              if (url && !urls.includes(url)) urls.push(url);
+            });
+          }
+          if (Array.isArray(color.frontImages)) {
+            color.frontImages.forEach(url => {
+              if (url && !urls.includes(url)) urls.push(url);
+            });
+          }
+          if (Array.isArray(color.backImages)) {
+            color.backImages.forEach(url => {
+              if (url && !urls.includes(url)) urls.push(url);
+            });
+          }
         });
       }
       return urls;
@@ -804,15 +816,26 @@
 
         for (const s of document.querySelectorAll('.color-section')) {
           const code = s.querySelector('.color-code').value;
-          const files = s.querySelector('.color-images').files;
-          const urls = [];
-          for (const f of files) {
+          const frontFiles = s.querySelector('.color-front-images').files;
+          const backFiles = s.querySelector('.color-back-images').files;
+          const frontUrls = [];
+          const backUrls = [];
+          const allUrls = [];
+          for (const f of frontFiles) {
             const uploaded = await uploadFile(f, productsBucket);
             uploadedPaths.push(uploaded.path);
-            urls.push(uploaded.publicUrl);
+            frontUrls.push(uploaded.publicUrl);
+            allUrls.push(uploaded.publicUrl);
             if (!mainImageUrl) mainImageUrl = uploaded.publicUrl;
           }
-          colors.push({ color: code, images: urls });
+          for (const f of backFiles) {
+            const uploaded = await uploadFile(f, productsBucket);
+            uploadedPaths.push(uploaded.path);
+            backUrls.push(uploaded.publicUrl);
+            allUrls.push(uploaded.publicUrl);
+            if (!mainImageUrl) mainImageUrl = uploaded.publicUrl;
+          }
+          colors.push({ color: code, images: allUrls, frontImages: frontUrls, backImages: backUrls });
         }
 
         if (!mainImageUrl) throw new Error('يرجى اختيار صورة واحدة على الأقل للمنتج');
