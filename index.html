@@ -1403,19 +1403,27 @@
       if (!govList.length) { cont.innerHTML = '<div class="status-message">لا توجد محافظات</div>'; return; }
 
       const table = document.createElement('div');
+      table.style.background = '#fff';
+      table.style.borderRadius = '12px';
+      table.style.border = '1px solid #f0f0f0';
+      table.style.overflow = 'hidden';
       table.innerHTML = `
-        <div style="display:grid;grid-template-columns:1fr 1fr 100px 80px;gap:8px;font-size:11px;font-weight:800;color:#888;text-transform:uppercase;padding:0 4px 8px;border-bottom:1px solid #eee;">
-          <span>المحافظة</span><span>Governorate</span><span>سعر الشحن (LE)</span><span></span>
+        <div style="display:grid;grid-template-columns:1.5fr 1.5fr 1fr;gap:16px;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;padding:16px 20px;background:#fcfcfc;border-bottom:1px solid #f0f0f0;">
+          <span>المحافظة</span><span>Governorate</span><span>سعر الشحن (LE)</span>
         </div>`;
 
-      govList.forEach(g => {
+      govList.forEach((g, index) => {
         const row = document.createElement('div');
-        row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 100px 90px;gap:8px;align-items:center;padding:10px 4px;border-bottom:1px solid #f5f5f5;';
+        row.style.cssText = `display:grid;grid-template-columns:1.5fr 1.5fr 1fr;gap:16px;align-items:center;padding:14px 20px;border-bottom:${index === govList.length - 1 ? 'none' : '1px solid #f5f5f5'};transition:background 0.2s;`;
+        row.onmouseover = () => row.style.background = '#fafafa';
+        row.onmouseout = () => row.style.background = 'transparent';
         row.innerHTML = `
-          <span style="font-size:14px;">${escapeHtml(g.name_ar || '')}</span>
-          <span style="font-size:13px;color:#888;">${escapeHtml(g.name_en || '')}</span>
-          <input type="number" min="0" step="1" value="${Number(g.shipping_price || 0)}" id="gov-price-${g.id}" style="padding:6px 8px;border:1px solid #e0e0e0;border-radius:6px;font-size:14px;width:90px;" />
-          <button class="mini-btn" id="gov-btn-${g.id}" onclick="saveGovPrice('${g.id}')" style="padding:6px 10px;min-width:72px;transition:background .2s,color .2s;">حفظ</button>`;
+          <span style="font-size:14px;font-weight:600;color:#111;">${escapeHtml(g.name_ar || '')}</span>
+          <span style="font-size:13px;color:#666;">${escapeHtml(g.name_en || '')}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="number" min="0" step="1" value="${Number(g.shipping_price || 0)}" id="gov-price-${g.id}" onchange="saveGovPrice('${g.id}')" style="padding:10px 14px;border:1px solid #e5e5e5;border-radius:8px;font-size:14px;width:100px;font-family:var(--font);transition:all 0.3s;background:#fcfcfc;" />
+            <span id="gov-status-${g.id}" style="font-size:16px;opacity:0;transition:opacity 0.3s;"></span>
+          </div>`;
         table.appendChild(row);
       });
       cont.innerHTML = '';
@@ -1424,30 +1432,37 @@
 
     window.saveGovPrice = async (govId) => {
       const input = document.getElementById(`gov-price-${govId}`);
-      const btn   = document.getElementById(`gov-btn-${govId}`);
-      if (!input || !btn) return;
+      const status = document.getElementById(`gov-status-${govId}`);
+      if (!input || !status) return;
+      
       const price = parseFloat(input.value) || 0;
-      btn.disabled = true;
-      btn.textContent = '...';
+      
+      input.style.opacity = '0.7';
+      status.textContent = '⏳';
+      status.style.opacity = '1';
+
       const { error } = await supabaseClient.from('governorates').update({ shipping_price: price }).eq('id', govId);
-      if (error) {
-        btn.textContent = '✗ فشل';
-        btn.style.background = '#d92b2b';
-        btn.style.color = '#fff';
-        setTimeout(() => { btn.textContent = 'حفظ'; btn.style.background = ''; btn.style.color = ''; btn.disabled = false; }, 2500);
-        return;
+      
+      input.style.opacity = '1';
+      if (!error) {
+        input.style.borderColor = '#28a745';
+        input.style.backgroundColor = '#f4fdf6';
+        status.textContent = '✅';
+        setTimeout(() => {
+          input.style.borderColor = '#e5e5e5';
+          input.style.backgroundColor = '#fcfcfc';
+          status.style.opacity = '0';
+        }, 2000);
+      } else {
+        input.style.borderColor = '#dc3545';
+        input.style.backgroundColor = '#fdf4f5';
+        status.textContent = '❌';
+        setTimeout(() => {
+          input.style.borderColor = '#e5e5e5';
+          input.style.backgroundColor = '#fcfcfc';
+          status.style.opacity = '0';
+        }, 2000);
       }
-      btn.textContent = '✓ تم';
-      btn.style.background = '#2d7a2d';
-      btn.style.color = '#fff';
-      input.style.borderColor = '#2d7a2d';
-      setTimeout(() => {
-        btn.textContent = 'حفظ';
-        btn.style.background = '';
-        btn.style.color = '';
-        btn.disabled = false;
-        input.style.borderColor = '';
-      }, 2000);
     };
 
     // ── Wallet phone setting ──────────────────────────────────
