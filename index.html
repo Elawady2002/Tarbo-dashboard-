@@ -199,9 +199,8 @@
     .hero-drag-handle {
       width: 36px;
       height: 44px;
-      border: 1px solid var(--border-strong);
-      border-radius: 8px;
-      background: #fff;
+      border: none;
+      background: transparent;
       color: var(--text-muted);
       display: grid;
       place-items: center;
@@ -1132,7 +1131,7 @@
         dragHandle.className = 'hero-drag-handle';
         dragHandle.setAttribute('aria-label', 'ترتيب الصورة بالسحب');
         dragHandle.title = 'اسحب لترتيب الصورة';
-        dragHandle.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01"></path></svg>';
+        dragHandle.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="9" cy="18" r="2"/><circle cx="15" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="15" cy="18" r="2"/></svg>';
         dragHandle.addEventListener('pointerdown', (event) => startHeroPointerDrag(event, index));
 
         const img = document.createElement('img');
