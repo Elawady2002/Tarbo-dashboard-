@@ -291,6 +291,9 @@
     .inline-remove svg { width: 20px; height: 20px; }
     .delete-product-btn:disabled,
     .inline-remove:disabled { opacity: 0.45; cursor: not-allowed; }
+    .category-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); }
+    .category-item:last-child { border-bottom: none; }
+    .category-name { font-size: 14px; font-weight: 600; color: var(--primary); }
     @media (max-width: 420px) {
       main { padding: 16px; padding-bottom: 100px; }
       header h1 { font-size: 16px; }
@@ -371,6 +374,12 @@
         <form id="addProductForm" class="form-grid">
           <div class="form-group"><label>اسم المنتج</label><input type="text" id="prodName" required /></div>
           <div class="form-group"><label>الوصف</label><textarea id="prodDesc" rows="3"></textarea></div>
+          <div class="form-group">
+            <label>القسم (الفئة)</label>
+            <select id="prodCategory" style="width: 100%; min-height: 44px; padding: 12px 13px; border: 1px solid var(--border); border-radius: 8px; background: var(--field-bg); font-family: inherit; font-size: 16px;">
+              <option value="">بدون قسم</option>
+            </select>
+          </div>
           <div class="form-row">
             <div class="form-group"><label>السعر</label><input type="number" id="prodPrice" required /></div>
             <div class="form-group"><label>المخزون</label><input type="number" id="prodStock" required /></div>
@@ -455,6 +464,25 @@
       </div>
     </div>
 
+    <div id="categoriesTab" class="tab-content">
+      <div class="page-title">
+        <h2>الأقسام (الفئات)</h2>
+      </div>
+      <div class="card">
+        <form id="addCategoryForm" class="form-grid" onsubmit="event.preventDefault(); window.addCategory();">
+          <div class="form-group">
+            <label>اسم القسم الجديد</label>
+            <input type="text" id="newCategoryName" placeholder="مثلاً: رجالي، حريمي، أطفال" required />
+          </div>
+          <button type="submit" class="btn">إضافة قسم</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="section-label"><span>الأقسام الحالية</span></div>
+        <div id="categoriesListContainer"><div class="loader">جاري التحميل...</div></div>
+      </div>
+    </div>
+
   </main>
 
   <nav class="bottom-nav">
@@ -477,6 +505,10 @@
     <button class="nav-item" onclick="switchTab('governoratesTab', this)">
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
       الشحن
+    </button>
+    <button class="nav-item" onclick="switchTab('categoriesTab', this)">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+      الأقسام
     </button>
   </nav>
 
@@ -912,6 +944,7 @@
         const productRow = {
           name: document.getElementById('prodName').value,
           price: parseFloat(document.getElementById('prodPrice').value),
+          category: document.getElementById('prodCategory').value,
           image_url: mainImageUrl
         };
 
@@ -1041,6 +1074,7 @@
       document.getElementById('prodDesc').value = product.description || '';
       document.getElementById('prodPrice').value = product.price || '';
       document.getElementById('prodStock').value = product.stock || '';
+      document.getElementById('prodCategory').value = product.category || '';
       
       document.querySelectorAll('.size-tag').forEach(t => t.remove());
       if (Array.isArray(product.sizes) && product.sizes.length > 0) {
@@ -1391,6 +1425,8 @@
     ];
 
     async function fetchGovernorates() {
+      // Also fetch categories while we are at it
+      fetchCategories();
       const cont = document.getElementById('governoratesContainer');
       if (!cont) return;
       cont.innerHTML = '<div class="loader">جاري التحميل...</div>';
@@ -1628,10 +1664,80 @@
       }
     };
 
+    // ── Categories Logic ────────────────────────────────────────
+    let allCategories = [];
+
+    async function fetchCategories() {
+      const container = document.getElementById('categoriesListContainer');
+      if (!container) return;
+      
+      const { data, error } = await supabaseClient.from('categories').select('*').order('name');
+      if (error) {
+        console.warn('Categories table might not exist yet:', error.message);
+        container.innerHTML = '<p style="color:var(--text-muted); font-size:12px; text-align:center;">يجب إنشاء جدول categories في Supabase أولاً</p>';
+        return;
+      }
+      allCategories = data || [];
+      renderCategories();
+      populateCategoryDropdowns();
+    }
+
+    function renderCategories() {
+      const container = document.getElementById('categoriesListContainer');
+      if (!container) return;
+      
+      if (allCategories.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:13px; padding:10px;">لا توجد أقسام مضافة</p>';
+        return;
+      }
+
+      container.innerHTML = allCategories.map(cat => `
+        <div class="category-item">
+          <span class="category-name">${escapeHtml(cat.name)}</span>
+          <button class="mini-btn mini-btn-danger" onclick="window.deleteCategory(${cat.id})">حذف</button>
+        </div>
+      `).join('');
+    }
+
+    function populateCategoryDropdowns() {
+      const select = document.getElementById('prodCategory');
+      if (!select) return;
+      
+      const currentValue = select.value;
+      select.innerHTML = '<option value="">بدون قسم</option>' + 
+        allCategories.map(cat => `<option value="${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</option>`).join('');
+      select.value = currentValue;
+    }
+
+    window.addCategory = async () => {
+      const input = document.getElementById('newCategoryName');
+      const name = input.value.trim();
+      if (!name) return;
+
+      const { error } = await supabaseClient.from('categories').insert([{ name }]);
+      if (error) {
+        alert('تعذر إضافة القسم: ' + error.message);
+        return;
+      }
+      input.value = '';
+      fetchCategories();
+    };
+
+    window.deleteCategory = async (id) => {
+      if (!confirm('هل أنت متأكد من حذف هذا القسم؟')) return;
+      const { error } = await supabaseClient.from('categories').delete().eq('id', id);
+      if (error) {
+        alert('تعذر حذف القسم: ' + error.message);
+        return;
+      }
+      fetchCategories();
+    };
+
     checkAuth();
     checkProductDetailsSchema();
     fetchProducts();
     fetchHeroImages();
+    fetchCategories();
   };
   </script>
 
