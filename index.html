@@ -1497,47 +1497,41 @@
     };
 
     // --- Discount Logic ---
-    window.openDiscountModal = (product) => {
-      document.getElementById('discountProductId').value = product.id;
-      document.getElementById('directDiscountInput').value = product.discount_percentage || '';
-      document.getElementById('couponCodeInput').value = '';
-      document.getElementById('couponPercentInput').value = '';
-      document.getElementById('discountOverlay').classList.add('open');
-      document.getElementById('discountDrawer').classList.add('open');
-    };
-
-    window.closeDiscountModal = () => {
-      document.getElementById('discountOverlay').classList.remove('open');
-      document.getElementById('discountDrawer').classList.remove('open');
-    };
-
     window.applyDirectDiscount = async () => {
       const pid = document.getElementById('discountProductId').value;
-      const pctValue = document.getElementById('directDiscountInput').value;
-      const pct = parseFloat(pctValue) || 0;
+      const salePriceValue = document.getElementById('directPriceInput').value;
+      const pctValue = document.getElementById('directPercentInput').value;
       
       const product = products.find(p => p.id == pid);
       if (!product) return;
       
-      let basePrice = product.old_price ? parseFloat(product.old_price) : parseFloat(product.price);
-      let newPrice = basePrice;
-      let oldPrice = null;
-      let finalPct = pct;
+      const basePrice = product.old_price ? parseFloat(product.old_price) : parseFloat(product.price);
       
-      if (pct > 0) {
-        // Clamp percentage to 100% max
+      let finalPrice;
+      let finalPct = parseFloat(pctValue);
+      let oldPrice = null;
+
+      const inputSalePrice = parseFloat(salePriceValue);
+      
+      // If sale price is valid and less than base, use it. Otherwise use percentage.
+      if (!isNaN(inputSalePrice) && inputSalePrice > 0 && inputSalePrice < basePrice) {
+        finalPrice = parseFloat(inputSalePrice.toFixed(2));
+        oldPrice = basePrice;
+        finalPct = Math.round(((basePrice - finalPrice) / basePrice) * 100);
+      } else if (!isNaN(finalPct) && finalPct > 0) {
         if (finalPct > 100) finalPct = 100;
-        newPrice = parseFloat((basePrice * (1 - (finalPct / 100))).toFixed(2));
+        finalPrice = parseFloat((basePrice * (1 - (finalPct / 100))).toFixed(2));
         oldPrice = basePrice;
       } else {
+        // Reset discount
+        finalPrice = basePrice;
         finalPct = null;
-        newPrice = basePrice;
         oldPrice = null;
       }
 
       const { error } = await supabaseClient.from('products').update({
         discount_percentage: finalPct,
-        price: newPrice,
+        price: finalPrice,
         old_price: oldPrice
       }).eq('id', pid);
 
@@ -1548,6 +1542,56 @@
       } else {
         alert('حدث خطأ أثناء تطبيق الخصم.');
       }
+    };
+
+    window.updateDiscountFromPrice = () => {
+      const pid = document.getElementById('discountProductId').value;
+      const product = products.find(p => p.id == pid);
+      if (!product) return;
+      const basePrice = product.old_price ? parseFloat(product.old_price) : parseFloat(product.price);
+      const salePrice = parseFloat(document.getElementById('directPriceInput').value);
+      if (!isNaN(salePrice) && basePrice > 0 && salePrice < basePrice) {
+        const pct = Math.round(((basePrice - salePrice) / basePrice) * 100);
+        document.getElementById('directPercentInput').value = pct;
+      } else if (salePrice >= basePrice) {
+        document.getElementById('directPercentInput').value = '0';
+      }
+    };
+
+    window.updatePriceFromDiscount = () => {
+      const pid = document.getElementById('discountProductId').value;
+      const product = products.find(p => p.id == pid);
+      if (!product) return;
+      const basePrice = product.old_price ? parseFloat(product.old_price) : parseFloat(product.price);
+      const pct = parseFloat(document.getElementById('directPercentInput').value);
+      if (!isNaN(pct) && basePrice > 0) {
+        const salePrice = parseFloat((basePrice * (1 - (pct / 100))).toFixed(2));
+        document.getElementById('directPriceInput').value = salePrice;
+      }
+    };
+
+    window.openDiscountModal = (product) => {
+      document.getElementById('discountProductId').value = product.id;
+      
+      const pctInput = document.getElementById('directPercentInput');
+      const priceInput = document.getElementById('directPriceInput');
+      
+      pctInput.value = product.discount_percentage || '';
+      if (product.old_price) {
+        priceInput.value = product.price;
+      } else {
+        priceInput.value = '';
+      }
+      
+      document.getElementById('couponCodeInput').value = '';
+      document.getElementById('couponPercentInput').value = '';
+      document.getElementById('discountOverlay').classList.add('open');
+      document.getElementById('discountDrawer').classList.add('open');
+    };
+
+    window.closeDiscountModal = () => {
+      document.getElementById('discountOverlay').classList.remove('open');
+      document.getElementById('discountDrawer').classList.remove('open');
     };
 
     window.generateRandomCoupon = () => {
@@ -1741,12 +1785,18 @@
         <span class="label-badge">١</span>
         خصم مباشر على المنتج
       </div>
-      <div class="drawer-input-row">
-        <input type="number" id="directDiscountInput" min="0" max="100"
-          placeholder="النسبة مثلاً: 30" dir="ltr" />
-        <button class="drawer-apply-btn" onclick="applyDirectDiscount()">تطبيق</button>
+      <div class="drawer-input-row" style="display: flex; gap: 12px; align-items: flex-end;">
+        <div style="flex: 1.5; display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">السعر الجديد (LE)</label>
+          <input type="number" id="directPriceInput" placeholder="مثلاً: 100" dir="ltr" oninput="window.updateDiscountFromPrice()" />
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 11px; font-weight: 700; color: var(--text-muted);">النسبة (%)</label>
+          <input type="number" id="directPercentInput" placeholder="30" dir="ltr" oninput="window.updatePriceFromDiscount()" />
+        </div>
+        <button class="drawer-apply-btn" onclick="applyDirectDiscount()" style="height: 46px;">تطبيق</button>
       </div>
-      <p class="drawer-hint">سيتغير السعر في المتجر فوراً وسيظهر السعر القديم مشطوباً بجانبه.</p>
+      <p class="drawer-hint">أدخل السعر الجديد مباشرة أو نسبة الخصم وسيتم حساب الآخر تلقائياً.</p>
     </div>
 
     <!-- Divider -->
