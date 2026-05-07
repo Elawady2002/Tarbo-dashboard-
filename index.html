@@ -1786,24 +1786,27 @@
         <span class="label-badge">١</span>
         خصم مباشر على المنتج
       </div>
-      <div class="drawer-input-row" style="display: flex; gap: 10px; align-items: flex-end; justify-content: flex-start;">
-        <div style="width: 130px; display: flex; flex-direction: column; gap: 6px;">
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
           <label style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-align: right;">السعر الجديد (LE)</label>
           <input type="number" id="directPriceInput" placeholder="مثلاً: 100" step="1" dir="ltr" 
             oninput="window.updateDiscountFromPrice()" 
             onchange="this.value = Math.round(this.value)"
-            style="width: 100%; height: 46px; margin: 0; padding: 0 12px;" />
+            style="width: 100%; height: 46px; margin: 0; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 15px; color: var(--primary); background: #fff;" />
         </div>
-        <div style="width: 80px; display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
           <label style="font-size: 11px; font-weight: 800; color: var(--text-muted); text-align: right;">النسبة (%)</label>
           <input type="number" id="directPercentInput" placeholder="30" step="1" dir="ltr" 
             oninput="window.updatePriceFromDiscount()" 
-            style="width: 100%; height: 46px; margin: 0; padding: 0 12px;" />
+            style="width: 100%; height: 46px; margin: 0; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 15px; color: var(--primary); background: #fff;" />
         </div>
-        <button class="drawer-apply-btn" onclick="applyDirectDiscount()" 
-          style="width: 100px; height: 46px; margin: 0; flex-shrink: 0; font-size: 14px;">تطبيق</button>
       </div>
-      <p class="drawer-hint">أدخل السعر الجديد مباشرة أو نسبة الخصم وسيتم حساب الآخر تلقائياً.</p>
+
+      <button class="drawer-apply-btn" onclick="applyDirectDiscount()" 
+        style="width: 100%; height: 46px; margin: 0; font-size: 14px; font-weight: 800; background: var(--primary); color: #fff; border: none; border-radius: 8px; cursor: pointer;">تطبيق الخصم</button>
+
+      <p class="drawer-hint" style="margin-top: 12px;">أدخل السعر الجديد مباشرة أو نسبة الخصم وسيتم حساب الآخر تلقائياً.</p>
     </div>
 
     <!-- Divider -->
