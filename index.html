@@ -912,9 +912,23 @@
         const productRow = {
           name: document.getElementById('prodName').value,
           price: parseFloat(document.getElementById('prodPrice').value),
-          old_price: null,
           image_url: mainImageUrl
         };
+
+        // Preserve old_price and discount if price hasn't changed during edit
+        if (editingProductId) {
+          const existing = products.find(p => p.id == editingProductId);
+          if (existing && productRow.price === parseFloat(existing.price)) {
+            productRow.old_price = existing.old_price;
+            productRow.discount_percentage = existing.discount_percentage;
+          } else {
+            productRow.old_price = null;
+            productRow.discount_percentage = null;
+          }
+        } else {
+          productRow.old_price = null;
+          productRow.discount_percentage = null;
+        }
 
         if (productDetailsSchemaReady) {
           productRow.description = document.getElementById('prodDesc').value;
@@ -1499,7 +1513,8 @@
 
     window.applyDirectDiscount = async () => {
       const pid = document.getElementById('discountProductId').value;
-      const pct = parseInt(document.getElementById('directDiscountInput').value) || 0;
+      const pctValue = document.getElementById('directDiscountInput').value;
+      const pct = parseFloat(pctValue) || 0;
       
       const product = products.find(p => p.id == pid);
       if (!product) return;
@@ -1507,14 +1522,21 @@
       let basePrice = product.old_price ? parseFloat(product.old_price) : parseFloat(product.price);
       let newPrice = basePrice;
       let oldPrice = null;
+      let finalPct = pct;
       
       if (pct > 0) {
-        newPrice = basePrice * (1 - (pct / 100));
+        // Clamp percentage to 100% max
+        if (finalPct > 100) finalPct = 100;
+        newPrice = parseFloat((basePrice * (1 - (finalPct / 100))).toFixed(2));
         oldPrice = basePrice;
+      } else {
+        finalPct = null;
+        newPrice = basePrice;
+        oldPrice = null;
       }
 
       const { error } = await supabaseClient.from('products').update({
-        discount_percentage: pct,
+        discount_percentage: finalPct,
         price: newPrice,
         old_price: oldPrice
       }).eq('id', pid);
